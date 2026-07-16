@@ -1,0 +1,12 @@
+[project]
+name = "pacman"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mazegenerator",
+]
+
+[tool.uv.sources]
+mazegenerator = { path = "wheels/mazegenerator-2.0.2-py3-none-any.whl" }

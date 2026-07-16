@@ -1,2 +1,0 @@
-# pacman
-recreating pacman game !

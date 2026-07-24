@@ -1,0 +1,32 @@
+{
+    # General game settings
+
+    "highscore_filename": "test",
+
+    # Player settings
+    "lives": 3,
+
+    # Scoring settings
+    "pacgum": 42,
+    "points_per_pacgum": 10,
+    "points_per_super_pacgum": 50,
+    "points_per_ghost": 200,
+
+    # Maze generation settings
+    "seed": 42,
+
+    # Level settings — one entry per level, array can have 10+ entries
+    "level_max_time": 90,
+    "levels": [
+        { "width": 21, "height": 21 },
+        { "width": 25, "height": 25 },
+        { "width": 29, "height": 25 },
+        { "width": 29, "height": 29 },
+        { "width": 33, "height": 29 },
+        { "width": 33, "height": 33 },
+        { "width": 37, "height": 33 },
+        { "width": 37, "height": 37 },
+        { "width": 41, "height": 37 },
+        { "width": 41, "height": 41 }
+    ]
+}

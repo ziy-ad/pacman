@@ -3,6 +3,9 @@ from mazegenerator import MazeGenerator
 from enum import IntFlag
 from rich.traceback import install
 from pyglet.window.key import KeyStateHandler
+from src.load_config import ParseConfig
+
+
 install()
 
 class directions(IntFlag):
@@ -122,9 +125,9 @@ class Pacman(arcade.Window):
             self.set_fullscreen(not self.fullscreen)
 
 def main():
+    parse = ParseConfig()
     pacman = Pacman(MazeGenerator())
     pacman.run()
-
 
 
 if __name__ == "__main__":

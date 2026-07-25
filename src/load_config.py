@@ -4,9 +4,9 @@ from typing import Any
 import sys
 import random
 from pathlib import Path
-from enum import Enum
 
-
+MIN_LENGTH = 5
+MAX_LENGTH = 51
 
 class ParseConfig:
     def __init__(self):
@@ -57,8 +57,7 @@ class ParseConfig:
 
 
     def validate_data(self) -> dict:
-
-        DEFAULT_LEVELS: list[LevelConfig] = [
+        default_levels: list[dict] = [
             {"width": 21, "height": 21},
             {"width": 25, "height": 25},
             {"width": 29, "height": 25},
@@ -74,7 +73,7 @@ class ParseConfig:
         validated_data = {"highscore_filename": "track_score.json",
                           "lives": 3, "pacgum": 42, "points_per_pacgum" : 1,
                           "points_per_super_pacgum": 50, "points_per_ghost": 200,
-                          "seed": 42, "level_max_time" : 90}
+                          "seed": 42, "level_max_time" : 90, "levels": default_levels}
 
         int_keys = ["lives", "pacagum", "points_per_pacgum", "points_per_super_pacgum", "points_per_ghost"]
 
@@ -87,6 +86,8 @@ class ParseConfig:
                 elif ".." in file_name or Path(file_name).is_absolute():
                     print("It could be risk to use a file another path", end=" ")
                     print("using 'highscore.json' as default")
+                else:
+                    validated_data["highscore_filename"] = file_name
             else:
                 print("file name should be string")
                 print("using 'highscore.json' as default")
@@ -123,9 +124,37 @@ class ParseConfig:
                 width = level['width']
                 height = level['height']
 
+                use_default = 0
 
-                if isinstance(width, int):
+                if not isinstance(width, int):
                     print("width should be positive")
-                print(i, level)
+                    use_default = 1
+                else:
+                    width = int(width)
+                    if width < MIN_LENGTH or width > MAX_LENGTH:
+                        print(f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" ")
+                        print("using a default level for width and heigth")
+                        use_default = 1
 
+                if not isinstance(height, int):
+                    use_default = 1
+                    print("height should be positive")
+                else:
+                    height = int(height)
+                    if (height < MIN_LENGTH or height > MAX_LENGTH) and not use_default:
+                        print(f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" ")
+                        print("using a default level for width and heigth")
+                        use_default = 1
+                    
+                if use_default == 0:
+                    if i <= 9:
+                        default_levels[i] = level
+                    else:
+                        default_levels.append(level)
+                else:
+                    if i > 9:
+                        default_levels.append(default_levels[i % 10])
+
+        for key, value in validated_data.items():
+            print(f"{key}: {value}")
         return validated_data

@@ -9,13 +9,16 @@ MIN_LENGTH = 5
 MAX_LENGTH = 51
 
 class ParseConfig:
+    """Class that contain and parse the config and returning a valid json/dict"""
     def __init__(self):
+        """class attributes where the config_file data should be stored"""
         self.path = ParseConfig.get_path()
         self.loaded_json = self.validate_file()
         self.valid_data = self.validate_data()
 
     @staticmethod
     def get_path() -> str:
+        """function that check if the number of arguments is 2 and return the 2nd parameter"""
         if len(sys.argv) != 2:
             print("Usage: uv run -m src config.json")
             exit(1)
@@ -23,6 +26,8 @@ class ParseConfig:
 
 
     def validate_file(self) -> dict:
+        """this function is responsable about filtring comments from the config file and try
+        to load the json if its valid raise error if the json file isn't valid"""
         filtred_file = ""
         in_comment = 0
         with open(self.path) as f:
@@ -49,6 +54,10 @@ class ParseConfig:
                 print("comment still not closed")
                 exit(1)
 
+        filtred_file = re.sub("#.*", "", filtred_file)
+        filtred_file = re.sub("//.*", "", filtred_file)
+        filtred_file = re.sub("/\*.*\*/", "", filtred_file)
+
         try:
             return json.loads(filtred_file)
         except Exception as e:
@@ -57,6 +66,8 @@ class ParseConfig:
 
 
     def validate_data(self) -> dict:
+        """Check if the required keys in the config file and their values are valid, if not log a clear message
+        and continue with the default value"""
         default_levels: list[dict] = [
             {"width": 21, "height": 21},
             {"width": 25, "height": 25},
@@ -75,22 +86,22 @@ class ParseConfig:
                           "points_per_super_pacgum": 50, "points_per_ghost": 200,
                           "seed": 42, "level_max_time" : 90, "levels": default_levels}
 
-        int_keys = ["lives", "pacagum", "points_per_pacgum", "points_per_super_pacgum", "points_per_ghost"]
+        int_keys = ["lives", "pacgum", "points_per_pacgum", "points_per_super_pacgum", "points_per_ghost"]
 
 
         if "highscore_filename" in self.loaded_json.keys():
             file_name = self.loaded_json.get('highscore_filename')
             if isinstance(file_name, str):
                 if file_name.strip() == "":
-                    print("Reciving empty file name using 'highscore.json' as default")
+                    print("Reciving empty file name using 'track_score.json' as default")
                 elif ".." in file_name or Path(file_name).is_absolute():
                     print("It could be risk to use a file another path", end=" ")
-                    print("using 'highscore.json' as default")
+                    print("using 'track_score.json' as default")
                 else:
                     validated_data["highscore_filename"] = file_name
             else:
                 print("file name should be string")
-                print("using 'highscore.json' as default")
+                print("using 'track_score.json' as default")
 
 
         for key in int_keys:
@@ -98,6 +109,13 @@ class ParseConfig:
                 value = self.loaded_json.get(key)
                 if isinstance(value, int) and value > 0:
                     validated_data[key] = value
+                else:
+                    if not isinstance(value, int):
+                        print(f"value of {key} should be integer", end=" ")
+                    else:
+                        print(f"value of {key} should be positive", end=" ")
+                    print(f"using {validated_data[key]} as default")
+
 
         if "seed" in self.loaded_json.keys():
             seed = self.loaded_json.get("seed")
@@ -155,6 +173,4 @@ class ParseConfig:
                     if i > 9:
                         default_levels.append(default_levels[i % 10])
 
-        for key, value in validated_data.items():
-            print(f"{key}: {value}")
         return validated_data

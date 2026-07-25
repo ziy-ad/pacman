@@ -54,10 +54,13 @@ class ParseConfig:
                 print("comment still not closed")
                 exit(1)
 
-        filtred_file = re.sub("#.*", "", filtred_file)
-        filtred_file = re.sub("//.*", "", filtred_file)
-        filtred_file = re.sub("/\*.*\*/", "", filtred_file)
+        filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
+        filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
+        filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
+        #filtred_file = re.sub(r"/\*.*?\*/$", "", filtred_file, flags=re.DOTALL)
 
+
+        print(filtred_file)
         try:
             return json.loads(filtred_file)
         except Exception as e:

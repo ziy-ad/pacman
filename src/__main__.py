@@ -23,6 +23,16 @@ class Point:
         for i in [self.x, self.y]:
             yield i
 
+class Ghost:
+    def __init(self, texture_path) -> None:
+        self.sprite = arcade.Sprite(texture_path)
+
+class GhostsList:
+    c = arcade.SpriteList()
+
+
+
+
 class Pacman(arcade.Window):
     def __init__(self, maze: MazeGenerator):
         super().__init__(fullscreen=True, update_rate=1/15, draw_rate=1/15)
@@ -126,8 +136,9 @@ class Pacman(arcade.Window):
 
 def main():
     parse = ParseConfig()
-    pacman = Pacman(MazeGenerator())
-    pacman.run()
+    print(parse.valid_data.lives)
+    # pacman = Pacman(MazeGenerator())
+    # pacman.run()
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
     "highscore_filename": "test",
 
     # Player settings
-    "lives": 3,
+    "lives ": 3,
 
     # Scoring settings
     "pacgum": 42,
@@ -13,7 +13,7 @@
     "points_per_ghost": 200,
 
     # Maze generation settings
-    "seed": 42,
+    "seed ": 42,
 
     # Level settings — one entry per level, array can have 10+ entries
     "level_max_time": 90,

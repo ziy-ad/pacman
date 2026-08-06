@@ -60,7 +60,7 @@ class ParseConfig:
         #filtred_file = re.sub(r"/\*.*?\*/$", "", filtred_file, flags=re.DOTALL)
 
 
-        print(filtred_file)
+         # print(filtred_file)
         try:
             return json.loads(filtred_file)
         except Exception as e:

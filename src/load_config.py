@@ -8,8 +8,10 @@ from pathlib import Path
 MIN_LENGTH = 5
 MAX_LENGTH = 51
 
+
 class ParseConfig:
     """Class that contain and parse the config and returning a valid json/dict"""
+
     def __init__(self):
         """class attributes where the config_file data should be stored"""
         self.path = ParseConfig.get_path()
@@ -23,7 +25,6 @@ class ParseConfig:
             print("Usage: uv run -m src config.json")
             exit(1)
         return sys.argv[1]
-
 
     def validate_file(self) -> dict:
         """this function is responsable about filtring comments from the config file and try
@@ -57,16 +58,14 @@ class ParseConfig:
         filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
         filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
         filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
-        #filtred_file = re.sub(r"/\*.*?\*/$", "", filtred_file, flags=re.DOTALL)
+        # filtred_file = re.sub(r"/\*.*?\*/$", "", filtred_file, flags=re.DOTALL)
 
-
-         # print(filtred_file)
+        # print(filtred_file)
         try:
             return json.loads(filtred_file)
         except Exception as e:
             print(f"in config file: {e}")
             exit(1)
-
 
     def validate_data(self) -> dict:
         """Check if the required keys in the config file and their values are valid, if not log a clear message
@@ -84,19 +83,33 @@ class ParseConfig:
             {"width": 41, "height": 41},
         ]
 
-        validated_data = {"highscore_filename": "track_score.json",
-                          "lives": 3, "pacgum": 42, "points_per_pacgum" : 1,
-                          "points_per_super_pacgum": 50, "points_per_ghost": 200,
-                          "seed": 42, "level_max_time" : 90, "levels": default_levels}
+        validated_data = {
+            "highscore_filename": "track_score.json",
+            "lives": 3,
+            "pacgum": 42,
+            "points_per_pacgum": 1,
+            "points_per_super_pacgum": 50,
+            "points_per_ghost": 200,
+            "seed": 42,
+            "level_max_time": 90,
+            "levels": default_levels,
+        }
 
-        int_keys = ["lives", "pacgum", "points_per_pacgum", "points_per_super_pacgum", "points_per_ghost"]
-
+        int_keys = [
+            "lives",
+            "pacgum",
+            "points_per_pacgum",
+            "points_per_super_pacgum",
+            "points_per_ghost",
+        ]
 
         if "highscore_filename" in self.loaded_json.keys():
-            file_name = self.loaded_json.get('highscore_filename')
+            file_name = self.loaded_json.get("highscore_filename")
             if isinstance(file_name, str):
                 if file_name.strip() == "":
-                    print("Reciving empty file name using 'track_score.json' as default")
+                    print(
+                        "Reciving empty file name using 'track_score.json' as default"
+                    )
                 elif ".." in file_name or Path(file_name).is_absolute():
                     print("It could be risk to use a file another path", end=" ")
                     print("using 'track_score.json' as default")
@@ -105,7 +118,6 @@ class ParseConfig:
             else:
                 print("file name should be string")
                 print("using 'track_score.json' as default")
-
 
         for key in int_keys:
             if key in self.loaded_json.keys():
@@ -119,7 +131,6 @@ class ParseConfig:
                         print(f"value of {key} should be positive", end=" ")
                     print(f"using {validated_data[key]} as default")
 
-
         if "seed" in self.loaded_json.keys():
             seed = self.loaded_json.get("seed")
             try:
@@ -130,20 +141,17 @@ class ParseConfig:
                 print(e)
                 print("using 42 as default !")
 
-
         if "level_max_time" in self.loaded_json.keys():
             level_max_time = self.loaded_json.get("level_max_time")
             if isinstance(level_max_time, int) and level_max_time > 90:
                 validated_data["level_max_time"] = level_max_time
 
-
-
         if "levels" in self.loaded_json.keys():
             levels = self.loaded_json.get("levels")
 
             for i, level in enumerate(levels):
-                width = level['width']
-                height = level['height']
+                width = level["width"]
+                height = level["height"]
 
                 use_default = 0
 
@@ -153,7 +161,9 @@ class ParseConfig:
                 else:
                     width = int(width)
                     if width < MIN_LENGTH or width > MAX_LENGTH:
-                        print(f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" ")
+                        print(
+                            f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" "
+                        )
                         print("using a default level for width and heigth")
                         use_default = 1
 
@@ -163,10 +173,12 @@ class ParseConfig:
                 else:
                     height = int(height)
                     if (height < MIN_LENGTH or height > MAX_LENGTH) and not use_default:
-                        print(f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" ")
+                        print(
+                            f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" "
+                        )
                         print("using a default level for width and heigth")
                         use_default = 1
-                    
+
                 if use_default == 0:
                     if i <= 9:
                         default_levels[i] = level

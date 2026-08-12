@@ -1,5 +1,4 @@
 from enum import IntFlag
-from pyglet.libs.x11.xlib import False_, True_
 from rich import print
 import arcade
 from mazegenerator import MazeGenerator
@@ -48,11 +47,9 @@ class Pacman(arcade.Window):
         self.camera = arcade.Camera2D()
         self.cx, self.cy = self.camera.position
         # cell settings
-        self.cell_size = 100
+        self.cell_size = 60
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
-        self.to_move = 5
-        y = 900
         self.points_cord = {}
         self.map_maze_coordinates()
         # pac man settings
@@ -65,9 +62,11 @@ class Pacman(arcade.Window):
         self.visited_cells = set()
         self.current_key = directions.UP
         self.next_key = directions.UP
+
     def init_pacman_possition(self):
         x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
         return Point(x, y)
+
     def load_pacman_frames(self):
         return  [
             arcade.load_texture("src/assets/pacman_closed.png"),
@@ -75,38 +74,30 @@ class Pacman(arcade.Window):
             arcade.load_texture("src/assets/pacman_open.png"),
         ]
     def map_maze_coordinates(self):
-        y = 1000
+        num_rows = len(self.maze.maze)
+        num_cols = len(self.maze.maze[0])
+
+        # Total pixel size of the maze grid
+        maze_pixel_w = num_cols * self.cell_size
+        maze_pixel_h = num_rows * self.cell_size
+
+        # Top-left cell center, so the whole grid is centered on the window
+        start_x = (self.width  - maze_pixel_w) // 2 + self.cell_size // 2
+        start_y = (self.height + maze_pixel_h) // 2 - self.cell_size // 2
+
         for idy, row in enumerate(self.maze.maze):
-            x = self.width // 2 - len(row) * self.cell_size
+            y = start_y - idy * self.cell_size
+            x = start_x
             for idx, _ in enumerate(row):
                 if self.maze.maze[idy][idx] == 15:
                     self.forbiden_cells.add((idx, idy))
                 else:
-                    self.points_cord.update({(x,y): (idx, idy)})
-                self.cell_positions[idy] += [(x,y)]
-
+                    self.points_cord.update({(x, y): (idx, idy)})
+                self.cell_positions[idy] += [(x, y)]
                 x += self.cell_size
-            y -= self.cell_size
     
-        self.pac_man_frames = [
-            arcade.load_texture("src/assets/pacman_closed.png"),
-            arcade.load_texture("src/assets/pacman_half.png"),
-            arcade.load_texture("src/assets/pacman_open.png"),
-        ]
-        self.pac_man_seconds = 0
-        self.pac_man_next = 1
-        self.pac_man_frame_index = 0
-        x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
-        print(self.points_cord)
-        self.pac_man_possition = Point(x, y)
-        self.points_set = set()
-        self.keys = KeyStateHandler()
-        self.push_handlers(self.keys)
-        self.current = directions.S
-        self.last_key = directions.S
-        self.pac_man = self.pac_man_frames[self.pac_man_next]
 
-    def can_move(self, dir: directions):
+    def can_move(self):
         x, y = self.pac_man_possition
         directions_oposit = {
             directions.UP:directions.DOWN,
@@ -117,33 +108,24 @@ class Pacman(arcade.Window):
         result = True
         if (x, y) in self.points_cord:
             idx, idy = self.points_cord[(x, y)]
-            result =  not self.maze.maze[idy][idx] & dir
-        self.current = dir if result else self.current
+            if not self.maze.maze[idy][idx] & self.next_key:
+                self.current_key = self.next_key
+            result =  not self.maze.maze[idy][idx] & self.current_key
+
+        if self.current_key == directions_oposit[self.next_key]:
+            self.current_key = self.next_key  
         return result
 
     def make_move(self):
-        if self.last_key == directions.E and self.can_move(directions.E):
-            self.pac_man_possition.x += self.to_move
-            self.current = directions.E
-        elif self.last_key == directions.W and self.can_move(directions.W):
-            self.pac_man_possition.x -= self.to_move
-            self.current = directions.W            
-        elif self.last_key == directions.S and self.can_move(directions.S):
-            self.pac_man_possition.y -= self.to_move
-            self.current = directions.S         
-        elif self.last_key == directions.N and self.can_move(directions.N):
-            self.pac_man_possition.y += self.to_move
-            self.current = directions.N
-
-    def check_last_key(self):
-        if (self.keys[arcade.key.RIGHT] or self.keys[arcade.key.D]):
-            self.last_key = directions.E
-        elif (self.keys[arcade.key.LEFT] or self.keys[arcade.key.A]):
-            self.last_key = directions.W            
-        elif (self.keys[arcade.key.DOWN] or self.keys[arcade.key.S]):
-            self.last_key = directions.S            
-        elif (self.keys[arcade.key.UP] or self.keys[arcade.key.W]):
-            self.last_key = directions.N
+        match self.current_key:
+            case directions.UP:
+                self.pac_man_possition.y += self.cell_size * 0.1
+            case directions.DOWN:
+                self.pac_man_possition.y -= self.cell_size * 0.1
+            case directions.RIGHT:
+                self.pac_man_possition.x += self.cell_size * 0.1
+            case directions.LEFT:
+                self.pac_man_possition.x -= self.cell_size * 0.1
 
     def on_update(self, delta_time):
         self.pac_man_seconds += delta_time
@@ -152,8 +134,8 @@ class Pacman(arcade.Window):
             if self.pac_man_frame_index == 0 or self.pac_man_frame_index == 2:
                 self.pac_man_next *= -1
             self.pac_man_seconds = 0
-        self.check_last_key()
-        self.make_move()
+        if self.can_move():
+            self.make_move()
 
     def get_pac_man_frame(self):
         match self.current_key:
@@ -172,20 +154,20 @@ class Pacman(arcade.Window):
     def on_draw(self):
         self.clear()
         with self.camera.activate():
-            text = arcade.Text(f"score: {len(self.points_set)}", 40, self.height - 100, arcade.color.ALLOY_ORANGE, font_size=30)
+            text = arcade.Text(f"score: {len(self.visited_cells)}", 40, self.height - 100, arcade.color.ALLOY_ORANGE, font_size=30)
             text.draw()
             for idy, row in enumerate(self.cell_positions):
                 for idx, cell in enumerate(row):
                     x, y = cell
-                    if self.maze.maze[idy][idx] & directions.N:
-                        arcade.draw_line(x - self.cell_size // 2, y + self.cell_size // 2, x + self.cell_size // 2, y + self.cell_size // 2 , arcade.color.GOLD_FUSION, line_width=15)
-                    if self.maze.maze[idy][idx] & directions.E:
-                        arcade.draw_line(x + self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y + self.cell_size // 2, arcade.color.GOLD_FUSION, line_width=15)
-                    if self.maze.maze[idy][idx] & directions.W:
-                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2, x - self.cell_size // 2 , y + self.cell_size // 2, arcade.color.GOLD_FUSION, line_width=15)
-                    if self.maze.maze[idy][idx] & directions.S:
-                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y - self.cell_size // 2 , arcade.color.GOLD_FUSION, line_width=15)
-                    if (idx, idy) not in self.points_set and (idx, idy) not in self.forbiden_cells:
+                    if self.maze.maze[idy][idx] & directions.UP:
+                        arcade.draw_line(x - self.cell_size // 2, y + self.cell_size // 2, x + self.cell_size // 2, y + self.cell_size // 2 , arcade.color.BABY_BLUE_EYES, line_width=5)
+                    if self.maze.maze[idy][idx] & directions.RIGHT:
+                        arcade.draw_line(x + self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y + self.cell_size // 2, arcade.color.BABY_BLUE_EYES, line_width=5)
+                    if self.maze.maze[idy][idx] & directions.LEFT:
+                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2, x - self.cell_size // 2 , y + self.cell_size // 2, arcade.color.BABY_BLUE_EYES, line_width=5)
+                    if self.maze.maze[idy][idx] & directions.DOWN:
+                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y - self.cell_size // 2 , arcade.color.BABY_BLUE_EYES, line_width=5)
+                    if (x, y) not in self.visited_cells and (idx, idy) not in self.forbiden_cells:
                         arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
             px, py = self.pac_man_possition
             if (px, py) in self.points_cord:

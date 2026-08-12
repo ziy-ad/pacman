@@ -1,11 +1,12 @@
 import arcade
-from mazegenerator import MazeGenerator
 from .load_config import ParseConfig
-from .pacman import Pacman, Parser
+from .pacman import Pacman
 def main():
     parse = ParseConfig()
-    pacman = Pacman(Parser(parse.valid_data))
-    pacman.run()
+    window = arcade.Window(fullscreen=True)
+    pacman = Pacman(parse.valid_data)
+    window.show_view(pacman)
+    window.run()
 
 
 if __name__ == "__main__":

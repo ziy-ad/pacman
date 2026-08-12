@@ -1,13 +1,24 @@
 import json
 import re
-from typing import Any
 import sys
 import random
 from pathlib import Path
+from dataclasses import dataclass
 
 MIN_LENGTH = 5
 MAX_LENGTH = 51
 
+@dataclass
+class ConfigData:
+    levels: list[dict]
+    highscore_filename: str
+    lives: int
+    pacgum: int
+    points_per_pacgum: int
+    points_per_super_pacgum: int
+    points_per_ghost: int
+    seed: None | int | float | str | bytes
+    level_max_time: int
 
 class ParseConfig:
     """Class that contain and parse the config and returning a valid json/dict"""
@@ -16,7 +27,7 @@ class ParseConfig:
         """class attributes where the config_file data should be stored"""
         self.path = ParseConfig.get_path()
         self.loaded_json = self.validate_file()
-        self.valid_data = self.validate_data()
+        self.valid_data = ConfigData(**self.validate_data())
 
     @staticmethod
     def get_path() -> str:
@@ -55,11 +66,71 @@ class ParseConfig:
                 print("comment still not closed")
                 exit(1)
 
-        filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
-        filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
-        filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
-        # filtred_file = re.sub(r"/\*.*?\*/$", "", filtred_file, flags=re.DOTALL)
+        # for line in filtred_file.splitlines():
+        #     line = re.sub(r"#.*$", "", line)
+        #     line = re.sub(r"//.*$", "", line)
+        #     line = re.sub(r"/\*.*?\*/", "", line)
+        #     last_text += line
 
+
+        def strip_json_comments(text):
+            out = []
+            i = 0
+            n = len(text)
+
+            in_string = False
+            escape = False
+
+            while i < n:
+                c = text[i]
+
+                if in_string:
+                    out.append(c)
+                    if escape:
+                        escape = False
+                    elif c == "\\":
+                        escape = True
+                    elif c == '"':
+                        in_string = False
+                    i += 1
+                    continue
+
+                if c == '"':
+                    in_string = True
+                    out.append(c)
+                    i += 1
+                    continue
+
+                # //
+                if text.startswith("//", i):
+                    while i < n and text[i] != "\n":
+                        i += 1
+                    continue
+
+                # #
+                if c == "#":
+                    while i < n and text[i] != "\n":
+                        i += 1
+                    continue
+
+                # /* */
+                if text.startswith("/*", i):
+                    i += 2
+                    while i + 1 < n and not text.startswith("*/", i):
+                        i += 1
+                    i += 2
+                    continue
+
+                out.append(c)
+                i += 1
+
+            return "".join(out)
+
+
+        print(strip_json_comments(filtred_file))
+        # filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
+        # filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
+        # filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
         # print(filtred_file)
         try:
             return json.loads(filtred_file)
@@ -150,10 +221,22 @@ class ParseConfig:
             levels = self.loaded_json.get("levels")
 
             for i, level in enumerate(levels):
-                width = level["width"]
-                height = level["height"]
-
                 use_default = 0
+                width = level.get("width")
+                if not width:
+                    print("width key not found")
+                    if i > 9:
+                        default_levels.append(default_levels[i % 10])
+                    continue
+
+                    
+                height = level.get("height")
+                if not height:
+                    print("height key not found")
+                    if i > 9:
+                        default_levels.append(default_levels[i % 10])
+                    continue
+
 
                 if not isinstance(width, int):
                     print("width should be positive")

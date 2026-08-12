@@ -65,12 +65,6 @@ class ParseConfig:
                 print("comment still not closed")
                 exit(1)
 
-        # for line in filtred_file.splitlines():
-        #     line = re.sub(r"#.*$", "", line)
-        #     line = re.sub(r"//.*$", "", line)
-        #     line = re.sub(r"/\*.*?\*/", "", line)
-        #     last_text += line
-
 
         def strip_json_comments(text):
             out = []
@@ -100,23 +94,28 @@ class ParseConfig:
                     i += 1
                     continue
 
-                # //
                 if text.startswith("//", i):
                     while i < n and text[i] != "\n":
                         i += 1
                     continue
 
-                # #
                 if c == "#":
                     while i < n and text[i] != "\n":
                         i += 1
                     continue
 
-                # /* */
                 if text.startswith("/*", i):
+                    start = i
                     i += 2
-                    while i + 1 < n and not text.startswith("*/", i):
+                    closed = False
+                    while i + 1 < n:
+                        if text.startswith("*/", i):
+                            closed = True
+                            break
                         i += 1
+                    if not closed:
+                        print("comment still not closed")
+                        exit(1)
                     i += 2
                     continue
 
@@ -126,11 +125,8 @@ class ParseConfig:
             return "".join(out)
 
 
-        print(strip_json_comments(filtred_file))
-        # filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
-        # filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
-        # filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
-        # print(filtred_file)
+        filtred_file = strip_json_comments(filtred_file)
+        print(filtred_file)
         try:
             return json.loads(filtred_file)
         except Exception as e:
@@ -203,12 +199,9 @@ class ParseConfig:
 
         if "seed" in self.loaded_json.keys():
             seed = self.loaded_json.get("seed")
-            try:
-                rg = random.Random()
-                rg.seed(seed)
+            if isinstance(seed, int):
                 validated_data["seed"] = seed
-            except Exception as e:
-                print(e)
+            else:
                 print("using 42 as default !")
 
         if "level_max_time" in self.loaded_json.keys():

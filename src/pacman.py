@@ -1,8 +1,8 @@
 from enum import IntFlag
 from rich import print
+from .load_config import ConfigData
 import arcade
 from mazegenerator import MazeGenerator
-from pyglet.window.key import KeyStateHandler
 from rich.traceback import install
 
 install()
@@ -22,23 +22,12 @@ class Point:
         yield self.x
         yield self.y
 
-class Parser:
-    def __init__(self, validated_data):
-        self.highscore_filename = validated_data["highscore_filename"]
-        self.lives = validated_data["lives"] 
-        self.pacgum = validated_data["pacgum"] 
-        self.points_per_pacgum = validated_data["points_per_pacgum"] 
-        self.points_per_super_pacgum = validated_data["points_per_super_pacgum"] 
-        self.points_per_ghost = validated_data["points_per_ghost"] 
-        self.seed = validated_data["seed"] 
-        self.level_max_time = validated_data["level_max_time"] 
-        self.levels = validated_data["levels"] 
 
-
-class Pacman(arcade.Window):
-    def __init__(self, parser: Parser):
-        super().__init__(fullscreen=True)
+class Pacman(arcade.View):
+    def __init__(self, parser: ConfigData):
         self.parser = parser
+        self.wall_color = arcade.color.BLUE
+        super().__init__(background_color=arcade.color.DARK_SLATE_BLUE)
 
         # maze config
         self.maze = MazeGenerator(seed=self.parser.seed, size=(self.parser.levels[0]["width"], self.parser.levels[0]["height"]))
@@ -160,13 +149,13 @@ class Pacman(arcade.Window):
                 for idx, cell in enumerate(row):
                     x, y = cell
                     if self.maze.maze[idy][idx] & directions.UP:
-                        arcade.draw_line(x - self.cell_size // 2, y + self.cell_size // 2, x + self.cell_size // 2, y + self.cell_size // 2 , arcade.color.BABY_BLUE_EYES, line_width=5)
+                        arcade.draw_line(x - self.cell_size // 2, y + self.cell_size // 2, x + self.cell_size // 2, y + self.cell_size // 2 , self.wall_color , line_width=5)
                     if self.maze.maze[idy][idx] & directions.RIGHT:
-                        arcade.draw_line(x + self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y + self.cell_size // 2, arcade.color.BABY_BLUE_EYES, line_width=5)
+                        arcade.draw_line(x + self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y + self.cell_size // 2, self.wall_color , line_width=5)
                     if self.maze.maze[idy][idx] & directions.LEFT:
-                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2, x - self.cell_size // 2 , y + self.cell_size // 2, arcade.color.BABY_BLUE_EYES, line_width=5)
+                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2, x - self.cell_size // 2 , y + self.cell_size // 2, self.wall_color , line_width=5)
                     if self.maze.maze[idy][idx] & directions.DOWN:
-                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y - self.cell_size // 2 , arcade.color.BABY_BLUE_EYES, line_width=5)
+                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y - self.cell_size // 2 ,self.wall_color , line_width=5)
                     if (x, y) not in self.visited_cells and (idx, idy) not in self.forbiden_cells:
                         arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
             px, py = self.pac_man_possition
@@ -181,7 +170,7 @@ class Pacman(arcade.Window):
     
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.F:
-            self.set_fullscreen(not self.fullscreen)
+            self.window.set_fullscreen(not self.window.fullscreen)            
         if symbol == arcade.key.RIGHT or symbol == arcade.key.D:
             self.next_key = directions.RIGHT
         elif symbol == arcade.key.LEFT or symbol == arcade.key.A:

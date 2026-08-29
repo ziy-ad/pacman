@@ -127,7 +127,6 @@ class ParseConfig:
             return "".join(out)
 
 
-        print(strip_json_comments(filtred_file))
         # filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
         # filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
         # filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)

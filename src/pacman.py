@@ -1,288 +1,19 @@
-from enum import IntFlag
+from enum import IntFlag, Enum
 from rich import print
 from .load_config import ConfigData
 import arcade
 from mazegenerator import MazeGenerator
 from rich.traceback import install
-from abc import ABC, abstractmethod
-import random
 import time
+from .ghosts_algorithm import *
+
 install()
-
-    
-from collections import deque
-
-
-class Ghost(ABC):
-    def __init__(self, coordinates, speed):
-        self.coordinates: tuple[int, int] = coordinates
-        self.last_coordinates = None
-        self.target_x = 0
-        self.target_y = 0
-        self.speed = speed
-
-
-
-    @abstractmethod
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
-        ...
-
-
-def bfs_to_next_move(ghost_coordinates, used_cells, maze, pacman_pos, last_key=None):
-        if ghost_coordinates == pacman_pos:
-            return ghost_coordinates
-
-        maze = maze.maze
-        rows, cols = len(maze), len(maze[0])
-        
-        queue = deque([ghost_coordinates])
-        visited = {ghost_coordinates: None}
-        
-        moves = [
-            (directions.UP,    0, -1),
-            (directions.RIGHT, 1,  0),
-            (directions.DOWN,  0,  1),
-            (directions.LEFT, -1,  0),
-        ]
-        
-        while queue:
-            cx, cy = queue.popleft()
-            
-            for wall_flag, dx, dy in moves:
-                nx, ny = cx + dx, cy + dy
-                
-                if not (0 <= nx < cols and 0 <= ny < rows):
-                    continue
-                if (nx, ny) in visited:
-                    continue
-                if maze[cy][cx] & wall_flag:
-                    continue
-
-                if (nx, ny) in used_cells:
-                    continue
-                
-                visited[(nx, ny)] = (cx, cy)
-                
-                if (nx, ny) == pacman_pos:
-                    step = (nx, ny)
-                    while visited[step] != ghost_coordinates:
-                        step = visited[step]
-                    return step
-                
-                queue.append((nx, ny))
-        
-        return ghost_coordinates
-
-
-def random_next_move(ghost_coordinates, maze):
-    gx, gy = ghost_coordinates
-    options = []
-
-    maze = maze.maze
-
-    if not maze[gy][gx] & directions.UP and gy > 0:
-        options.append((gx, gy - 1))
-    if not maze[gy][gx] & directions.DOWN and gy < len(maze) - 1:
-        options.append((gx, gy + 1))
-    if not maze[gy][gx] & directions.LEFT and gx > 0:
-        options.append((gx - 1, gy))
-    if not maze[gy][gx] & directions.RIGHT and gx < len(maze[0]) - 1:
-        options.append((gx + 1, gy))
-    
-    if not options:
-        return ghost_coordinates
-    return random.choice(options)
-
-
-def run_away(ghost_coordinates, used_cells, maze, pacman_pos, last_coordinates, last_key=None):
-    gx, gy = ghost_coordinates
-    px, py = pacman_pos
-    grid = maze.maze
-    rows, cols = len(grid), len(grid[0])
-
-    moves = [
-        (0, -1),
-        (1, 0),
-        (0, 1),
-        (-1, 0),
-    ]
-
-    candidates = []
-
-    for dx, dy in moves:
-        nx, ny = gx + dx, gy + dy
-
-        if not (0 <= nx < cols and 0 <= ny < rows):
-            continue
-        if grid[gy][gx] & (
-            (directions.UP if dy == -1 else 0) |
-            (directions.RIGHT if dx == 1 else 0) |
-            (directions.DOWN if dy == 1 else 0) |
-            (directions.LEFT if dx == -1 else 0)
-        ):
-            continue
-        if (nx, ny) in used_cells:
-            continue
-
-        distance = abs(nx - px) + abs(ny - py)
-        candidates.append((distance, (nx, ny)))
-
-    if not candidates:
-        return ghost_coordinates
-
-    if len(candidates) > 1:
-        filtred_candidates = []
-        for candidate in candidates:
-            if candidate != last_coordinates:
-                filtred_candidates.append(candidate)
-        candidates = filtred_candidates
-
-    candidates.sort(key=lambda item: item[0], reverse=True)
-    return candidates[0][1]
-
-
-class BlueGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
-        self.sprite = arcade.Sprite("src/assets/blueghost.png", scale=0.1)
-        self.required_time = 3
-
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
-        current = time.time()
-        if current < self.required_time:
-            return self.coordinates
-
-        if pacman_pos == self.coordinates:
-            return self.coordinates
-
-        return run_away(self.coordinates, used_cells, maze, pacman_pos, self.last_coordinates, last_key)
-        if pacman_pos in used_cells:
-            return random_next_move(self.coordinates, maze)
-
-        
-        return bfs_to_next_move(self.coordinates, used_cells, maze, pacman_pos, last_key)
-
-
-class PinkGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
-        self.sprite = arcade.Sprite("src/assets/pinkghost.png", scale=0.1)
-        self.required_time = 0
-
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
-        current = time.time()
-        if (current - start_time) < self.required_time:
-            return self.coordinates
-        return run_away(self.coordinates, used_cells, maze, pacman_pos, self.last_coordinates, last_key)
-        return random_next_move(self.coordinates, maze)
-
-
-class RedGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
-        self.sprite = arcade.Sprite("src/assets/redghost.png", scale=0.1)
-        self.required_time = 6
-
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
-        current = time.time()
-        if (current - start_time) < self.required_time:
-            return self.coordinates
-
-        if self.coordinates == pacman_pos:
-            return self.coordinates
-
-        return run_away(self.coordinates, used_cells, maze, pacman_pos, self.last_coordinates, last_key)
-
-        if pacman_pos in used_cells:
-            return random_next_move(self.coordinates, maze)
-
-        temp_maze = maze
-        maze = maze.maze
-        rows, cols = len(maze), len(maze[0])
-
-        # if last_key is not None:
-        if last_key is not None:
-            gx , gy = pacman_pos
-            if last_key == directions.LEFT and gx > 0 and not maze[gy][gx] & directions.LEFT:
-                    pacman_pos = (gx - 1, gy)
-            elif last_key == directions.RIGHT and gx < cols - 1 and not maze[gy][gx] & directions.RIGHT:
-                    pacman_pos = (gx + 1, gy)
-            elif last_key == directions.UP and gy > 0 and not maze[gy][gx] & directions.UP:
-                    pacman_pos = (gx, gy - 1)
-            elif last_key == directions.DOWN and gy < rows - 1 and not maze[gy][gx] & directions.DOWN:
-                    pacman_pos = (gx, gy + 1)
-
-        return bfs_to_next_move(self.coordinates, used_cells, temp_maze, pacman_pos, last_key)
-
-
-class OrangeGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
-        self.sprite = arcade.Sprite("src/assets/orangeghost.png", scale=0.1)
-        self.required_time = 9
-        self.min_distance = 6
-
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
-        current = time.time()
-        if (current - start_time) < self.required_time:
-            return self.coordinates
-
-        if pacman_pos == self.coordinates:
-            return self.coordinates
-
-        return run_away(self.coordinates, used_cells, maze, pacman_pos, self.last_coordinates, last_key)
-
-        if pacman_pos in used_cells:
-            return random_next_move(self.coordinates, maze)
-
-
-        maze_grid = maze.maze
-        gx, gy = self.coordinates
-        px, py = pacman_pos
-
-        distance = abs(gx - px) + abs(gy - py)
-        if distance > self.min_distance:
-            target = self.get_position_infront(maze_grid, pacman_pos, last_key, self.min_distance)
-            return bfs_to_next_move(self.coordinates, used_cells, maze, target, last_key)
-
-        return bfs_to_next_move(self.coordinates, used_cells, maze, pacman_pos, last_key)
-        
-    def get_position_infront(self, maze_grid, start_pos, direction, max_steps):
-        """Look up to max_steps ahead in the given direction, stopping at walls."""
-        x, y = start_pos
-        rows, cols = len(maze_grid), len(maze_grid[0])
-        
-        direction_delta = {
-            directions.UP:    (0, -1),
-            directions.RIGHT: (1,  0),
-            directions.DOWN:  (0,  1),
-            directions.LEFT:  (-1, 0),
-        }
-        
-        dx, dy = direction_delta.get(direction, (0, 0))
-        
-        for _ in range(max_steps):
-            # Check if we can move in this direction
-            if maze_grid[y][x] & direction:
-                break  # Wall blocks us, stop here
-            
-            # Move to next cell
-            x += dx
-            y += dy
-            
-            # Check bounds
-            if not (0 <= x < cols and 0 <= y < rows):
-                break
-        
-        return (x, y)
-
 
 class directions(IntFlag):
     UP = 1
     RIGHT = 2
     DOWN = 4
     LEFT = 8
-
 
 class Point:
     def __init__(self,x, y):
@@ -351,7 +82,10 @@ class Pacman(arcade.View):
             self.ghost_list.append(ghost.sprite)
             self.ghosts[name] = ghost
 
-    for dx, dy in moves:
+
+    def init_pacman_possition(self):
+        x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
+        return Point(x, y)
 
     def load_pacman_frames(self):
         return  [
@@ -359,13 +93,20 @@ class Pacman(arcade.View):
             arcade.load_texture("src/assets/pacman_half.png"),
             arcade.load_texture("src/assets/pacman_open.png"),
         ]
+
     def map_maze_coordinates(self):
         num_rows = len(self.maze.maze)
         num_cols = len(self.maze.maze[0])
 
         # Total pixel size of the maze grid
+        maze_pixel_w = num_cols * self.cell_size
+        maze_pixel_h = num_rows * self.cell_size
 
-    for dx, dy in moves:
+        # Top-left cell center, so the whole grid is centered on the window
+        start_x = (self.width  - maze_pixel_w) // 2 + self.cell_size // 2
+        start_y = (self.height + maze_pixel_h) // 2 - self.cell_size // 2
+
+        for idy, row in enumerate(self.maze.maze):
             y = start_y - idy * self.cell_size
             x = start_x
             for idx, _ in enumerate(row):
@@ -374,8 +115,7 @@ class Pacman(arcade.View):
                 else:
                     self.points_cord.update({(x, y): (idx, idy)})
                 self.cell_positions[idy] += [(x, y)]
-                x += self.cell_size
-    
+                x += self.cell_size    
 
     def can_move(self):
         x, y = self.pac_man_possition
@@ -432,11 +172,6 @@ class Pacman(arcade.View):
 
         for ghost in self.ghosts.values():
             self.used_cells.add(ghost.coordinates)
-
-        # if self.pac_man_grid in self.used_cells:
-        #     self.caught_by_ghost = True
-        #     self.catch_freeze_time = 0.0
-            # self.used_cells = set()
 
         for ghost in self.ghosts.values():
             # Check if ghost has reached the center of its target cell

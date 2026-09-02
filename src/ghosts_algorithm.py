@@ -22,13 +22,16 @@ class moves(Enum):
 class Ghost(ABC):
     def __init__(self, coordinates, speed):
         self.coordinates: tuple[int, int] = coordinates
+        self.init_coord: tuple[int, int] = coordinates
+        self.speed = speed
         self.last_coordinates = None
         self.target_x = 0
         self.target_y = 0
-        self.speed = speed
+        self.eatable = False
+        self.time_to_respawn = 0
 
     @abstractmethod
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
+    def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
         ...
 
 
@@ -152,13 +155,16 @@ class BlueGhost(Ghost):
         self.sprite = arcade.Sprite("src/assets/blueghost.png", scale=0.1)
         self.required_time = 3
 
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
+    def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
         current = time.time()
-        if current < self.required_time:
+        if (current - start_time) < self.required_time:
             return self.coordinates
 
         if pacman_pos == self.coordinates:
             return self.coordinates
+
+        if edible:
+            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
 
         # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
         if pacman_pos in used_cells:
@@ -174,11 +180,17 @@ class PinkGhost(Ghost):
         self.sprite = arcade.Sprite("src/assets/pinkghost.png", scale=0.1)
         self.required_time = 0
 
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
+    def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
         current = time.time()
         if (current - start_time) < self.required_time:
             return self.coordinates
-        # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+
+        if pacman_pos == self.coordinates:
+            return self.coordinates
+
+        if edible:
+            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+
         return random_next_move(self.coordinates, maze)
 
 
@@ -188,7 +200,7 @@ class RedGhost(Ghost):
         self.sprite = arcade.Sprite("src/assets/redghost.png", scale=0.1)
         self.required_time = 6
 
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
+    def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
         current = time.time()
         if (current - start_time) < self.required_time:
             return self.coordinates
@@ -196,7 +208,9 @@ class RedGhost(Ghost):
         if self.coordinates == pacman_pos:
             return self.coordinates
 
-        # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+        if edible:
+            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+
         if pacman_pos in used_cells:
             return random_next_move(self.coordinates, maze)
 
@@ -204,7 +218,6 @@ class RedGhost(Ghost):
         maze = maze.maze
         rows, cols = len(maze), len(maze[0])
 
-        # if last_key is not None:
         if last_key is not None:
             gx , gy = pacman_pos
             if last_key == directions.LEFT and gx > 0 and not maze[gy][gx] & directions.LEFT:
@@ -226,18 +239,19 @@ class OrangeGhost(Ghost):
         self.required_time = 9
         self.min_distance = 6
 
-    def get_path(self, start_time, used_cells, maze, pacman_pos, last_key=None):
+    def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
         current = time.time()
         if (current - start_time) < self.required_time:
             return self.coordinates
 
         if pacman_pos == self.coordinates:
             return self.coordinates
-        # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+
+        if edible:
+            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
 
         if pacman_pos in used_cells:
             return random_next_move(self.coordinates, maze)
-
 
         maze_grid = maze.maze
         gx, gy = self.coordinates
@@ -265,15 +279,12 @@ class OrangeGhost(Ghost):
         dx, dy = direction_delta.get(direction, (0, 0))
         
         for _ in range(max_steps):
-            # Check if we can move in this direction
             if maze_grid[y][x] & direction:
-                break  # Wall blocks us, stop here
-            
-            # Move to next cell
+                break  
+
             x += dx
             y += dy
             
-            # Check bounds
             if not (0 <= x < cols and 0 <= y < rows):
                 break
         return (x, y)

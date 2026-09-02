@@ -6,6 +6,9 @@ from mazegenerator import MazeGenerator
 from rich.traceback import install
 import time
 from .ghosts_algorithm import *
+from .score_tracker import score_board
+from pathlib import Path
+
 
 install()
 
@@ -57,7 +60,14 @@ class Pacman(arcade.View):
         self.caught_by_ghost = False
         self.catch_freeze_time = 0.0
         self.catch_freeze_duration = 1.2
+        self.score_path = Path(__file__).resolve().parent.parent / "highscore.json"
+        self.scoreboard = score_board(str(self.score_path))
+        self.score = 0
+        self.edible = False
+        self.edible_duration = 0.0
+        self.edible_time = 0.0
 
+        self.scoreboard.load_scores()
         # spawn the ghosts in the corners of the maze
         self.corner_grid_coords = [
             (0, 0),
@@ -148,11 +158,28 @@ class Pacman(arcade.View):
                 self.pac_man_possition.x -= self.cell_size * 0.1
 
     def on_update(self, delta_time):
+        if self.edible:
+            self.edible_duration += delta_time
+            if self.edible_duration >= self.edible_time:
+                self.edible = False
+                self.edible_duration = 0.0
+                self.edible_time = 0.0
+        for ghost in self.ghosts.values():
+            if ghost.eatable:
+                ghost.time_to_respawn += delta_time
+                if ghost.time_to_respawn >= 5.0:
+                    ghost.eatable = False
+                    ghost.time_to_respawn = 0.0
+                    ghost.coordinates = ghost.init_coord
+                    gx, gy = ghost.coordinates
+                    ghost.sprite.center_x, ghost.sprite.center_y = self.cell_positions[gy][gx]
+                    ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
         if self.caught_by_ghost:
             self.catch_freeze_time += delta_time
             if self.catch_freeze_time >= self.catch_freeze_duration:
                 from .main_menu import GameOverView
-                self.window.show_view(GameOverView(self.window))
+                # pass scoreboard and final score, plus this pacman instance
+                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
             return
         self.pac_man_seconds += delta_time
         if self.pac_man_seconds >= 0.2:
@@ -170,8 +197,12 @@ class Pacman(arcade.View):
         if grid_lookup is not None:
             self.pac_man_grid = grid_lookup
 
+
+        self.ghost_list = arcade.SpriteList()
         for ghost in self.ghosts.values():
-            self.used_cells.add(ghost.coordinates)
+            if not ghost.eatable:
+                self.ghost_list.append(ghost.sprite)
+                self.used_cells.add(ghost.coordinates)
 
         for ghost in self.ghosts.values():
             # Check if ghost has reached the center of its target cell
@@ -184,7 +215,7 @@ class Pacman(arcade.View):
 
                 # Ask AI for the next grid cell to move to
                 # position = self.cell_positions[self.pac_man_possition.y][self.pac_man_possition.x]
-                next_cell = ghost.get_path(self.start_time, self.used_cells, self.maze, self.pac_man_grid, last_key=self.current_key)
+                next_cell = ghost.get_path(self.start_time, self.used_cells, self.maze, self.pac_man_grid, self.edible, last_key=self.current_key)
                 
                 if next_cell:
                     self.used_cells.add(next_cell)
@@ -206,14 +237,18 @@ class Pacman(arcade.View):
                 ghost.sprite.center_y -= ghost.speed
         self.used_cells = set()
 
-
-        catch_distance = self.cell_size * 0.1
+        catch_distance = self.cell_size * 0.5
         for ghost in self.ghosts.values():
             if abs(ghost.sprite.center_x - px) <= catch_distance and \
             abs(ghost.sprite.center_y - py) <= catch_distance:
-                self.caught_by_ghost = True
-                self.catch_freeze_time = 0.0
-                break
+                if self.edible:
+                    ghost.eatable = True
+                    self.score += self.parser.points_per_ghost
+                else:
+                    if not ghost.eatable:
+                        self.catch_freeze_time = 0.0
+                        self.caught_by_ghost = True
+                        break
 
     def get_pac_man_frame(self):
         match self.current_key:
@@ -230,7 +265,7 @@ class Pacman(arcade.View):
     def on_draw(self):
         self.clear()
         with self.camera.activate():
-            text = arcade.Text(f"score: {len(self.visited_cells)}", 40, self.height - 100, arcade.color.ALLOY_ORANGE, font_size=30)
+            text = arcade.Text(f"score: {self.score}", 40, self.height - 100, arcade.color.ALLOY_ORANGE, font_size=30)
             text.draw()
             for idy, row in enumerate(self.cell_positions):
                 for idx, cell in enumerate(row):
@@ -244,13 +279,33 @@ class Pacman(arcade.View):
                     if self.maze.maze[idy][idx] & directions.DOWN:
                         arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y - self.cell_size // 2 ,self.wall_color , line_width=5)
                     if (x, y) not in self.visited_cells and (idx, idy) not in self.forbiden_cells:
-                        arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
+                        if self.points_cord[(x, y)] in self.corner_grid_coords:
+                            arcade.draw_point(x, y , arcade.color.YELLOW, size=8)
+                        else:
+                            arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
+
+                px, py = self.pac_man_possition
+                if (px, py) in self.points_cord and (px, py) not in self.visited_cells:
+                    self.visited_cells.add((px, py))
+                    if self.points_cord[(px, py)] in self.corner_grid_coords:
+                        self.score += self.parser.points_per_super_pacgum
+                        self.edible = True
+                        self.edible_time += 5
+                    else:
+                        self.score += self.parser.points_per_pacgum
 
             px, py = self.pac_man_possition
             if (px, py) in self.points_cord:
                 self.visited_cells.add((px, py))
             pac_man = arcade.XYWH(px , py, 40, 40)
             arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)
+            
+            # print(len(self.visited_cells), len(self.forbiden_cells))
+            if len(self.visited_cells) + len(self.forbiden_cells) == len(self.points_cord):
+                from .main_menu import GameOverView
+                # pass scoreboard and final score, plus this pacman instance
+                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+
             self.ghost_list.draw()
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):

@@ -1,0 +1,62 @@
+import json
+import re
+from typing import List
+
+
+class score_board:
+    NAME_RE = re.compile(r"^[A-Za-z0-9 ]{1,10}$")
+
+    def __init__(self, path: str):
+        self.scores: List[dict] = []
+        self.path = path
+        self.load_scores()
+
+    def load_scores(self):
+        try:
+            with open(self.path, "r") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    self.scores = [{"name": str(e.get("name", "")), "score": int(e.get("score"))} for e in data]
+                else:
+                    self.scores = []
+                print(self.scores)
+        except FileNotFoundError:
+            self.scores = []
+
+    def save_scores(self):
+        with open(self.path, "w") as f:
+            json.dump(self.scores, f, indent=4)
+
+    def validate_name(self, name: str) -> bool:
+        return bool(self.NAME_RE.match(name))
+
+    def add_score(self, player_name: str, score: int) -> None:
+        name = player_name.strip()
+        if not self.validate_name(name):
+            return
+        try:
+            score = int(score)
+        except ValueError:
+            return 
+
+        if score <= 0:
+            return
+
+        existed = None
+        for e in self.scores:
+            if e["name"] == name:
+                existed = e
+                break
+        if existed:
+            if score > existed["score"]:
+                existed["score"] = score
+        else:
+            self.scores.append({"name": name, "score": score})
+
+        self.scores = sorted(self.scores, key=lambda e: e["score"], reverse=True)[:10]
+        self.save_scores()
+        return
+
+    def get_all_scores(self) -> List[dict]:
+        return sorted(self.scores, key=lambda e: e["score"], reverse=True)
+

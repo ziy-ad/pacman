@@ -9,7 +9,6 @@ from .ghosts_algorithm import *
 from .score_tracker import score_board
 from pathlib import Path
 
-
 install()
 
 class directions(IntFlag):
@@ -79,7 +78,9 @@ class Pacman(arcade.View):
         self.ghost_name = ["PinkGhost", "RedGhost", "OrangeGhost", "BlueGhost"]
         self.ghost_speed = self.speed
         self.set_ghosts()
-    
+
+    def set_main_menu(self, main_menu):
+        self.main_menu = main_menu
     def set_ghosts(self):
         self.ghosts = {}
         self.ghost_list = arcade.SpriteList()
@@ -343,6 +344,8 @@ class Pacman(arcade.View):
             self.window.set_fullscreen(not self.window.fullscreen)            
         if symbol == arcade.key.RIGHT or symbol == arcade.key.D:
             self.next_key = directions.RIGHT
+        if symbol == arcade.key.ESCAPE:
+            self.window.show_view(self.main_menu)
         elif symbol == arcade.key.LEFT or symbol == arcade.key.A:
             self.next_key = directions.LEFT            
         elif symbol == arcade.key.DOWN or symbol == arcade.key.S:

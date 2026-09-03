@@ -3,19 +3,20 @@ from .pacman import Pacman
 from .score_tracker import score_board
 import re
 import time
+from .speed_screen import speed_view
 
 
 class MainMenu(arcade.View):
     def __init__(self, window: arcade.Window, game_view: Pacman) -> None:
         super().__init__(window, background_color=arcade.color.BLACK)
         self.game_view = game_view
-
+        self.is_started = False
         self.buttons = ["Play", "Highscores", "Settings", "Quit"]
         self.selected = 0
         self.button_width = 250
         self.button_height = 50
-        self.button_spacing = 20
-
+        self.button_spacing = 20 
+        self.game_view.set_main_menu(self)
     def on_draw(self):
         self.clear()
         cx = self.width // 2
@@ -51,14 +52,22 @@ class MainMenu(arcade.View):
 
         elif symbol == arcade.key.RETURN:
             label = self.buttons[self.selected]
-            if label == "Play":
+            if label == "Play" or label == "Resume":
+                self.is_started = True
+                self.buttons[0] = "Resume"
                 if self.game_view.start_time is None:
                     self.game_view.start_time = time.time()
                 self.window.show_view(self.game_view)
+            elif label == "Settings":
+                self.window.show_view(speed_view(self))
             elif label == "Highscores":
                 self.window.show_view(ScoreboardView(self.window, self.game_view.scoreboard, self.game_view))
             elif label == "Quit":
                 arcade.exit()
+        elif symbol == arcade.key.ESCAPE:
+            if self.is_started:
+                self.window.show_view(self.game_view)
+
 
 
 class GameOverView(arcade.View):
@@ -83,47 +92,6 @@ class GameOverView(arcade.View):
         cx = self.width // 2
         cy = self.height // 2
 
-        # arcade.draw_text(
-        #     "Game Over",
-        #     cx,
-        #     cy + 80,
-        #     arcade.color.WHITE,
-        #     font_size=42,
-        #     anchor_x="center",
-        #     anchor_y="center",
-        #     bold=True,
-        # )
-        # arcade.draw_text(
-        #     "You were caught!",
-        #     cx,
-        #     cy + 20,
-        #     arcade.color.WHITE,
-        #     font_size=24,
-        #     anchor_x="center",
-        #     anchor_y="center",
-        # )
-
-        # rect = arcade.XYWH(cx, self.button_y, self.button_width, self.button_height)
-        # arcade.draw_rect_filled(rect, arcade.color.RED)
-        # arcade.draw_text(
-        #     "Exit",
-        #     cx,
-        #     self.button_y,
-        #     arcade.color.WHITE,
-        #     font_size=22,
-        #     anchor_x="center",
-        #     anchor_y="center",
-        #     bold=True,
-        # )
-
-        # arcade.draw_text(
-        #     self.message,
-        #     cx,
-        #     cy - 40,
-        #     arcade.color.WHITE,
-        #     font_size=18,
-        #     anchor_x="center",
-        # )
         arcade.draw_text(
             self.input_name + ("_" if int(time.time() * 2) % 2 == 0 else ""),
             cx,

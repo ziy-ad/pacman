@@ -78,6 +78,9 @@ class Pacman(arcade.View):
         self.positions = [self.cell_positions[0][0], self.cell_positions[0][-1], self.cell_positions[-1][0], self.cell_positions[-1][-1]]
         self.ghost_name = ["PinkGhost", "RedGhost", "OrangeGhost", "BlueGhost"]
         self.ghost_speed = self.cell_size * 0.1 * 0.8
+        self.set_ghosts()
+    
+    def set_ghosts(self):
         self.ghosts = {}
         self.ghost_list = arcade.SpriteList()
 
@@ -91,6 +94,13 @@ class Pacman(arcade.View):
             ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
             self.ghost_list.append(ghost.sprite)
             self.ghosts[name] = ghost
+    def reset(self):
+        self.set_ghosts()
+        self.visited_cells.clear()
+        self.pac_man_possition = self.init_pacman_possition()
+        self.caught_by_ghost = False
+
+
 
 
     def init_pacman_possition(self):

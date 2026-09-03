@@ -122,58 +122,57 @@ class Ghost(ABC):
         
         return random.choice(filtred_options)
 
+    def run_away(self, maze, pacman_pos, last_coordinates):
+        gx, gy = self.coordinates
+        grid = maze.maze
+        rows, cols = len(grid), len(grid[0])
+        far = float('inf')
 
-def bfs_distances(maze, source):
-    """Real corridor distance from source to every reachable cell."""
-    grid = maze.maze
-    rows, cols = len(grid), len(grid[0])
-    dist = {source: 0}
-    queue = [source]
 
-    while queue:
-        cx, cy = queue.pop(0)
+        def bfs_distances(maze, source):
+            """Real corridor distance from source to every reachable cell."""
+            grid = maze.maze
+            rows, cols = len(grid), len(grid[0])
+            dist = {source: 0}
+            queue = [source]
+
+            while queue:
+                cx, cy = queue.pop(0)
+                for move in moves:
+                    wall_flag, dx, dy = move.value
+                    nx, ny = cx + dx, cy + dy
+                    if (nx, ny) in dist:
+                        continue
+                    if not (0 <= nx < cols and 0 <= ny < rows):
+                        continue
+                    if grid[cy][cx] & wall_flag:
+                        continue
+                    dist[(nx, ny)] = dist[(cx, cy)] + 1
+                    queue.append((nx, ny))
+            return dist
+
+        dist = bfs_distances(maze, pacman_pos)
+
+        valid = {}
         for move in moves:
             wall_flag, dx, dy = move.value
-            nx, ny = cx + dx, cy + dy
-            if (nx, ny) in dist:
-                continue
+            nx, ny = gx + dx, gy + dy
             if not (0 <= nx < cols and 0 <= ny < rows):
                 continue
-            if grid[cy][cx] & wall_flag:
+            if grid[gy][gx] & wall_flag:
                 continue
-            dist[(nx, ny)] = dist[(cx, cy)] + 1
-            queue.append((nx, ny))
-    return dist
+            valid[(nx, ny)] = dist.get((nx, ny), far)
 
+        if not valid:
+            return self.coordinates
 
-def run_away(ghost_coordinates, maze, pacman_pos, last_coordinates):
-    gx, gy = ghost_coordinates
-    grid = maze.maze
-    rows, cols = len(grid), len(grid[0])
-    far = float('inf')
+        forward = {k: v for k, v in valid.items() if k not in last_coordinates}
+        if forward:
+            valid = forward
 
-    dist = bfs_distances(maze, pacman_pos)
-
-    valid = {}
-    for move in moves:
-        wall_flag, dx, dy = move.value
-        nx, ny = gx + dx, gy + dy
-        if not (0 <= nx < cols and 0 <= ny < rows):
-            continue
-        if grid[gy][gx] & wall_flag:
-            continue
-        valid[(nx, ny)] = dist.get((nx, ny), far)
-
-    if not valid:
-        return ghost_coordinates
-
-    forward = {k: v for k, v in valid.items() if k not in last_coordinates}
-    if forward:
-        valid = forward
-
-    best = max(v for _ , v in valid.items())
-    valid = {k: v for k, v in valid.items() if v == best}
-    return random.choice(list(valid.keys()))
+        best = max(v for _ , v in valid.items())
+        valid = {k: v for k, v in valid.items() if v == best}
+        return random.choice(list(valid.keys()))
 
 
 class BlueGhost(Ghost):
@@ -191,7 +190,7 @@ class BlueGhost(Ghost):
             return self.coordinates
 
         if edible:
-            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+            return self.run_away(maze, pacman_pos, self.last_coordinates)
 
         # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
         if pacman_pos in used_cells:
@@ -216,7 +215,7 @@ class PinkGhost(Ghost):
             return self.coordinates
 
         if edible:
-            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+            return self.run_away(maze, pacman_pos, self.last_coordinates)
 
         return self.random_next_move(maze)
 
@@ -236,7 +235,7 @@ class RedGhost(Ghost):
             return self.coordinates
 
         if edible:
-            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+            return self.run_away(maze, pacman_pos, self.last_coordinates)
 
         if pacman_pos in used_cells:
             return self.random_next_move(maze)
@@ -275,7 +274,7 @@ class OrangeGhost(Ghost):
             return self.coordinates
 
         if edible:
-            return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
+            return self.run_away(maze, pacman_pos, self.last_coordinates)
 
         if pacman_pos in used_cells:
             return self.random_next_move(maze)

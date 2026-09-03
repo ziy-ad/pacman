@@ -157,15 +157,30 @@ class Pacman(arcade.View):
         return result
 
     def make_move(self):
-        match self.current_key:
-            case directions.UP:
-                self.pac_man_possition.y += self.cell_size * 0.1
-            case directions.DOWN:
-                self.pac_man_possition.y -= self.cell_size * 0.1
-            case directions.RIGHT:
-                self.pac_man_possition.x += self.cell_size * 0.1
-            case directions.LEFT:
-                self.pac_man_possition.x -= self.cell_size * 0.1
+    def make_move(self):
+        move = self.cell_size * self.speed
+        MOVE_VECTORS = {
+            directions.UP:(0,1),
+            directions.DOWN:(0,-1),
+            directions.RIGHT:(1,0),
+            directions.LEFT:(-1,0)
+        }
+        dx, dy = MOVE_VECTORS[self.current_key]
+        step = self.cell_size * self.speed
+    
+        if dx != 0:
+            target = self.current_index.x + dx * self.cell_size
+            new_x = self.pac_man_possition.x + dx * step
+            self.pac_man_possition.x = min(new_x, target) if dx > 0 else max(new_x, target)
+            if self.pac_man_possition.x == target:
+                self.current_index.x = target
+
+        if dy != 0:
+            target = self.current_index.y + dy * self.cell_size
+            new_y = self.pac_man_possition.y + dy * step
+            self.pac_man_possition.y = min(new_y, target) if dy > 0 else max(new_y, target)
+            if self.pac_man_possition.y == target:
+                self.current_index.y = target
 
     def on_update(self, delta_time):
         if self.edible:

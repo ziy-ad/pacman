@@ -75,16 +75,18 @@ class Pacman(arcade.View):
         self.current_index = Point(self.pac_man_possition.x, self.pac_man_possition.y)
         self.speed = 0.05
         self.pause_menu: MainMenu | None = None
-        self.ghosts = [BlueGhost((9, 9)), RedGhost((9,0)), OrangeGhost((0,9)), PinkGhost((0,0)) ]
+        self.ghosts = [BlueGhost((9, 9), self.maze.maze, self.cell_size), RedGhost((9,0), self.maze.maze, self.cell_size), OrangeGhost((0,9), self.maze.maze, self.cell_size), PinkGhost((0,0), self.maze.maze, self.cell_size) ]
         self.spirit_list = arcade.SpriteList()
         for g in self.ghosts:
             dx, dy = g.coordinates
             g.center_x, g.center_y = self.cell_positions[dy][dx]
+            g.target_x, g.target_y = g.center_x, g.center_y
             print(self.cell_positions[dy][dx])
             self.spirit_list.append(g)
 
         # levels
-        self.level_index = 0 
+        self.level_index = 0
+        self.used_cells = set()
     def init_pacman_possition(self):
         x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
         return Point(x, y)
@@ -171,8 +173,10 @@ class Pacman(arcade.View):
             self.pac_man_seconds = 0
         if self.can_move():
             self.make_move()
-        self.spirit_list.update()
-
+        px, py = self.current_index
+        pac_man_pos = self.points_cord[(px, py)]
+        self.spirit_list.update(self.speed, 0, self.used_cells , pac_man_pos, self.current_key, self.cell_positions)
+        self.used_cells = set()
     def get_pac_man_frame(self):
         match self.current_key:
             case directions.UP:

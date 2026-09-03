@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import random
 import time
 import arcade
-
+from rich import print
 
 class directions(IntFlag):
     UP = 1
@@ -25,8 +25,8 @@ class Ghost(arcade.Sprite, ABC):
         self.coordinates: tuple[int, int] = coordinates
         self.last_coordinates = None
         self.maze = maze
-        self.target_x = 0
         self.cell_size = cell_size
+        self.target_x = 0
         self.target_y = 0
     def set_sprite_image(self, file_path: str, scale: float = 0.1):
         self.texture = arcade.load_texture(file_path)
@@ -34,12 +34,15 @@ class Ghost(arcade.Sprite, ABC):
     @abstractmethod
     def get_path(self, start_time, used_cells, pacman_pos, last_key=None) -> tuple[int, int]:
         ...
-    def update(self, speed, start, used_cells, pacman_pos, last_key) -> None:
+    def update(self, speed, start, used_cells: set, pacman_pos, last_key, cells_pixel) -> None:
         if (self.target_x , self.target_y) == (self.center_x, self.center_y):
-            self.target_x , self.target_y = self.get_path(start, used_cells, pacman_pos, last_key)
+            dx , dy = self.get_path(start, used_cells, pacman_pos, last_key)
+            if isinstance(self, PinkGhost):
+                print(self.center_x, self.center_y, self.target_x, self.target_y)
+            self.target_x, self.target_y = cells_pixel[dy][dx]
         MOVE_VECTORS = {
-            directions.UP:(0,1),
-            directions.DOWN:(0,-1),
+            directions.UP:(0,-1),
+            directions.DOWN:(0,1),
             directions.RIGHT:(1,0),
             directions.LEFT:(-1,0)
         }
@@ -57,25 +60,26 @@ class Ghost(arcade.Sprite, ABC):
         dx, dy = MOVE_VECTORS[current_key]
         step = self.cell_size * speed
         if dx != 0:
-            target = (self.target_x - (self.cell_size * dx)) + dx * self.cell_size
-            new_x = self.center_x + dx * step
+            target = self.target_x
+            new_x = self.center_x + (dx * step)
             self.center_x = min(new_x, target) if dx > 0 else max(new_x, target)
 
         if dy != 0:
-            target = (self.target_y - (self.cell_size * dy)) + dy * self.cell_size
-            new_y = self.center_y + dy * step
+            target = self.target_y
+            new_y = self.center_y + (dy * step)
             self.center_y = min(new_y, target) if dy > 0 else max(new_y, target)
 
 
 
-def bfs_to_next_move(ghost_coordinates: tuple[int, int], used_cells, maze, pacman_pos, last_key=None):
+def bfs_to_next_move(ghost_coordinates: tuple[int, int], used_cells, maze, pacman_pos, last_key=None, flag=False):
+
     if ghost_coordinates == pacman_pos:
         return ghost_coordinates
 
     rows, cols = len(maze), len(maze[0])
     
     queue = [ghost_coordinates]
-    visited = {ghost_coordinates: ghost_coordinates}
+    visited = {ghost_coordinates: None}
     
 
     while queue:
@@ -103,7 +107,6 @@ def bfs_to_next_move(ghost_coordinates: tuple[int, int], used_cells, maze, pacma
                 return step
             
             queue.append((nx, ny))
-    
     return ghost_coordinates
 
 
@@ -211,11 +214,11 @@ class PinkGhost(Ghost):
         self.required_time = 0
 
     def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
+        return random_next_move(self.coordinates, self.maze)
         current = time.time()
         if (current - start_time) < self.required_time:
             return self.coordinates
         # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
-        return random_next_move(self.coordinates, self.maze)
 
 
 class RedGhost(Ghost):

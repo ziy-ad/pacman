@@ -52,6 +52,8 @@ class MainMenu(arcade.View):
         elif symbol == arcade.key.RETURN:
             label = self.buttons[self.selected]
             if label == "Play":
+                if self.game_view.start_time is None:
+                    self.game_view.start_time = time.time()
                 self.window.show_view(self.game_view)
             elif label == "Highscores":
                 self.window.show_view(ScoreboardView(self.window, self.game_view.scoreboard, self.game_view))

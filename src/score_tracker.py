@@ -19,7 +19,6 @@ class score_board:
                     self.scores = [{"name": str(e.get("name", "")), "score": int(e.get("score"))} for e in data]
                 else:
                     self.scores = []
-                print(self.scores)
         except FileNotFoundError:
             self.scores = []
 

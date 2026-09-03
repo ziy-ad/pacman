@@ -81,7 +81,7 @@ class Pacman(arcade.View):
         self.ghosts = {}
         self.ghost_list = arcade.SpriteList()
 
-        self.start_time = time.time()
+        self.start_time = None
 
         for position, name in zip(self.corner_grid_coords, self.ghost_name):
             ghost_class = globals()[name]
@@ -220,9 +220,10 @@ class Pacman(arcade.View):
                 if next_cell:
                     self.used_cells.add(next_cell)
                     gx, gy = next_cell
-                    ghost.last_coordinates = ghost.coordinates
-                    ghost.coordinates = (gx, gy)  # Update logical grid position
-                    # Assign new pixel target to move towards
+                    if len(ghost.last_coordinates) > 2:
+                        ghost.last_coordinates.pop(0)
+                    ghost.last_coordinates.append(ghost.coordinates)
+                    ghost.coordinates = (gx, gy)
                     ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
             
             # Smoothly move the sprite towards the target position

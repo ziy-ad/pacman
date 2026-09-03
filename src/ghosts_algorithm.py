@@ -24,7 +24,7 @@ class Ghost(ABC):
         self.coordinates: tuple[int, int] = coordinates
         self.init_coord: tuple[int, int] = coordinates
         self.speed = speed
-        self.last_coordinates = None
+        self.last_coordinates = []
         self.target_x = 0
         self.target_y = 0
         self.eatable = False
@@ -35,65 +35,92 @@ class Ghost(ABC):
         ...
 
 
-def bfs_to_next_move(ghost_coordinates, used_cells, maze, pacman_pos, last_key=None):
-    if ghost_coordinates == pacman_pos:
-        return ghost_coordinates
+    def bfs_to_next_move(self, used_cells, maze, pacman_pos, last_key=None):
+        if self.coordinates == pacman_pos:
+            return self.coordinates
 
-    maze = maze.maze
-    rows, cols = len(maze), len(maze[0])
-    
-    queue = [ghost_coordinates]
-    visited = {ghost_coordinates: None}
-    
+        maze = maze.maze
+        rows, cols = len(maze), len(maze[0])
+        recent_coordinates = set(self.last_coordinates)
 
-    while queue:
-        cx, cy = queue.pop(0)
+        queue = [self.coordinates]
+        visited = {self.coordinates: None}
+
+        while queue:
+            cx, cy = queue.pop(0)
+            for move in moves:
+                wall_flag, dx, dy = move.value
+                nx, ny = cx + dx, cy + dy
+
+                if not (0 <= nx < cols and 0 <= ny < rows):
+                    continue
+                if (nx, ny) in visited:
+                    continue
+                if maze[cy][cx] & wall_flag:
+                    continue
+
+                if (nx, ny) in used_cells or (nx, ny) in recent_coordinates:
+                    continue
+
+                visited[(nx, ny)] = (cx, cy)
+
+                if (nx, ny) == pacman_pos:
+                    step = (nx, ny)
+                    while visited[step] != self.coordinates:
+                        step = visited[step]
+                    return step
+
+                queue.append((nx, ny))
+
+        gx, gy = self.coordinates
+        fallback = []
         for move in moves:
             wall_flag, dx, dy = move.value
-            nx, ny = cx + dx, cy + dy
-            
+            nx, ny = gx + dx, gy + dy
+
             if not (0 <= nx < cols and 0 <= ny < rows):
                 continue
-            if (nx, ny) in visited:
+            if maze[gy][gx] & wall_flag:
                 continue
-            if maze[cy][cx] & wall_flag:
-                continue
-
             if (nx, ny) in used_cells:
                 continue
+            fallback.append((nx, ny))
+
+        if fallback:
+            filtered = [cell for cell in fallback if cell not in recent_coordinates]
+            return random.choice(filtered if filtered else fallback)
+
+        return self.coordinates
+
+
+    def random_next_move(self, maze):
+        gx, gy = self.coordinates
+        options = []
+
+        maze = maze.maze
+
+        for move in moves:
+            wall_flag, dx, dy = move.value
+            nx, ny = gx + dx, gy + dy
             
-            visited[(nx, ny)] = (cx, cy)
-            
-            if (nx, ny) == pacman_pos:
-                step = (nx, ny)
-                while visited[step] != ghost_coordinates:
-                    step = visited[step]
-                return step
-            
-            queue.append((nx, ny))
-    
-    return ghost_coordinates
+            if not (0 <= nx < len(maze[0]) and 0 <= ny < len(maze)):
+                continue
+            if maze[gy][gx] & wall_flag:
+                continue
+            options.append((nx, ny))
 
+        if not options:
+            return self.coordinates
 
-def random_next_move(ghost_coordinates, maze):
-    gx, gy = ghost_coordinates
-    options = []
+        filtred_options = []
+        for option in options:
+            if option not in self.last_coordinates:
+                filtred_options.append(option)
 
-    maze = maze.maze
-
-    for move in moves:
-        wall_flag, dx, dy = move.value
-        nx, ny = gx + dx, gy + dy
+        if not filtred_options:
+            return random.choice(options)
         
-        if not (0 <= nx < len(maze[0]) and 0 <= ny < len(maze)):
-            continue
-        if maze[gy][gx] & wall_flag:
-            continue
-        options.append((nx, ny))
-
-    if not options:
-        return ghost_coordinates
-    return random.choice(options)
+        return random.choice(filtred_options)
 
 
 def bfs_distances(maze, source):
@@ -140,7 +167,7 @@ def run_away(ghost_coordinates, maze, pacman_pos, last_coordinates):
     if not valid:
         return ghost_coordinates
 
-    forward = {k: v for k, v in valid.items() if k != last_coordinates}
+    forward = {k: v for k, v in valid.items() if k not in last_coordinates}
     if forward:
         valid = forward
 
@@ -168,10 +195,10 @@ class BlueGhost(Ghost):
 
         # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
         if pacman_pos in used_cells:
-            return random_next_move(self.coordinates, maze)
+            return self.random_next_move(maze)
 
         
-        return bfs_to_next_move(self.coordinates, used_cells, maze, pacman_pos, last_key)
+        return self.bfs_to_next_move(used_cells, maze, pacman_pos, last_key)
 
 
 class PinkGhost(Ghost):
@@ -191,7 +218,7 @@ class PinkGhost(Ghost):
         if edible:
             return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
 
-        return random_next_move(self.coordinates, maze)
+        return self.random_next_move(maze)
 
 
 class RedGhost(Ghost):
@@ -212,7 +239,7 @@ class RedGhost(Ghost):
             return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
 
         if pacman_pos in used_cells:
-            return random_next_move(self.coordinates, maze)
+            return self.random_next_move(maze)
 
         temp_maze = maze
         maze = maze.maze
@@ -229,7 +256,7 @@ class RedGhost(Ghost):
             elif last_key == directions.DOWN and gy < rows - 1 and not maze[gy][gx] & directions.DOWN:
                     pacman_pos = (gx, gy + 1)
 
-        return bfs_to_next_move(self.coordinates, used_cells, temp_maze, pacman_pos, last_key)
+        return self.bfs_to_next_move(used_cells, temp_maze, pacman_pos, last_key)
 
 
 class OrangeGhost(Ghost):
@@ -251,7 +278,7 @@ class OrangeGhost(Ghost):
             return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
 
         if pacman_pos in used_cells:
-            return random_next_move(self.coordinates, maze)
+            return self.random_next_move(maze)
 
         maze_grid = maze.maze
         gx, gy = self.coordinates
@@ -260,9 +287,9 @@ class OrangeGhost(Ghost):
         distance = abs(gx - px) + abs(gy - py)
         if distance > self.min_distance:
             target = self.get_position_infront(maze_grid, pacman_pos, last_key, self.min_distance)
-            return bfs_to_next_move(self.coordinates, used_cells, maze, target, last_key)
+            return self.bfs_to_next_move(used_cells, maze, target, last_key)
 
-        return bfs_to_next_move(self.coordinates, used_cells, maze, pacman_pos, last_key)
+        return self.bfs_to_next_move(used_cells, maze, pacman_pos, last_key)
         
     def get_position_infront(self, maze_grid, start_pos, direction, max_steps):
         """Look up to max_steps ahead in the given direction, stopping at walls."""

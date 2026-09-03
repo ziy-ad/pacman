@@ -19,10 +19,13 @@ class MainMenu(arcade.View):
         self.button_height = 50
         self.button_spacing = 20
         self.speed_view = speed_view(self)
+        self.background = arcade.load_texture("src/assets/menu_background_riso.jpg")
     def on_draw(self):
         self.clear()
+        r = arcade.rect.XYWH(self.width // 2 , self.height // 2 , self.width, self.height)
+        arcade.draw_texture_rect(self.background, r)
         cx = self.width // 2
-        cy = self.height // 2
+        cy = self.height // 2 - 125
         if self.image:
             self.pause_background = arcade.Texture(
                 name="pause_background",

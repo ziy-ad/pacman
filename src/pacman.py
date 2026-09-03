@@ -4,9 +4,9 @@ from .load_config import ConfigData
 import arcade
 from mazegenerator import MazeGenerator
 from rich.traceback import install
+from .ghosts_algorithm import *
 from typing import TYPE_CHECKING
 from PIL import Image, ImageFilter
-
 if TYPE_CHECKING:
     from .main_menu import MainMenu
 
@@ -73,8 +73,15 @@ class Pacman(arcade.View):
         self.next_key = directions.UP
         # speed mechanism
         self.current_index = Point(self.pac_man_possition.x, self.pac_man_possition.y)
-        self.speed = 0.01
+        self.speed = 0.05
         self.pause_menu: MainMenu | None = None
+        self.ghosts = [BlueGhost((9, 9)), RedGhost((9,0)), OrangeGhost((0,9)), PinkGhost((0,0)) ]
+        self.spirit_list = arcade.SpriteList()
+        for g in self.ghosts:
+            dx, dy = g.coordinates
+            g.center_x, g.center_y = self.cell_positions[dy][dx]
+            print(self.cell_positions[dy][dx])
+            self.spirit_list.append(g)
 
         # levels
         self.level_index = 0 
@@ -164,6 +171,7 @@ class Pacman(arcade.View):
             self.pac_man_seconds = 0
         if self.can_move():
             self.make_move()
+        self.spirit_list.update()
 
     def get_pac_man_frame(self):
         match self.current_key:
@@ -201,7 +209,7 @@ class Pacman(arcade.View):
             if (px, py) in self.points_cord:
                 self.visited_cells.add((px, py))
             arcade.draw_texture_rect(self.get_pac_man_frame(), arcade.XYWH(px , py, 40, 40))
-
+            self.spirit_list.draw()                
     
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.F:

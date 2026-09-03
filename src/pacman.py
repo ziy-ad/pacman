@@ -66,7 +66,7 @@ class Pacman(arcade.View):
         self.edible = False
         self.edible_duration = 0.0
         self.edible_time = 0.0
-
+        self.speed = 0.05
         self.scoreboard.load_scores()
         # spawn the ghosts in the corners of the maze
         self.corner_grid_coords = [
@@ -77,7 +77,7 @@ class Pacman(arcade.View):
         ]
         self.positions = [self.cell_positions[0][0], self.cell_positions[0][-1], self.cell_positions[-1][0], self.cell_positions[-1][-1]]
         self.ghost_name = ["PinkGhost", "RedGhost", "OrangeGhost", "BlueGhost"]
-        self.ghost_speed = self.cell_size * 0.1 * 0.8
+        self.ghost_speed = self.speed
         self.set_ghosts()
     
     def set_ghosts(self):
@@ -105,6 +105,7 @@ class Pacman(arcade.View):
 
     def init_pacman_possition(self):
         x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
+        self.current_index = Point(x, y)
         return Point(x, y)
 
     def load_pacman_frames(self):
@@ -157,8 +158,6 @@ class Pacman(arcade.View):
         return result
 
     def make_move(self):
-    def make_move(self):
-        move = self.cell_size * self.speed
         MOVE_VECTORS = {
             directions.UP:(0,1),
             directions.DOWN:(0,-1),
@@ -253,14 +252,14 @@ class Pacman(arcade.View):
             
             # Smoothly move the sprite towards the target position
             if ghost.sprite.center_x < ghost.target_x:
-                ghost.sprite.center_x += ghost.speed
+                ghost.sprite.center_x += self.cell_size * ghost.speed
             elif ghost.sprite.center_x > ghost.target_x:
-                ghost.sprite.center_x -= ghost.speed
+                ghost.sprite.center_x -= self.cell_size *  ghost.speed
                 
             if ghost.sprite.center_y < ghost.target_y:
-                ghost.sprite.center_y += ghost.speed
+                ghost.sprite.center_y += self.cell_size *  ghost.speed
             elif ghost.sprite.center_y > ghost.target_y:
-                ghost.sprite.center_y -= ghost.speed
+                ghost.sprite.center_y -= self.cell_size *  ghost.speed
         self.used_cells = set()
 
         catch_distance = self.cell_size * 0.5

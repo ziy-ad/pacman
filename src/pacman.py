@@ -4,6 +4,13 @@ from .load_config import ConfigData
 import arcade
 from mazegenerator import MazeGenerator
 from rich.traceback import install
+from typing import TYPE_CHECKING
+from PIL import Image, ImageFilter
+
+if TYPE_CHECKING:
+    from .main_menu import MainMenu
+
+
 install()
 
 class directions(IntFlag):
@@ -35,7 +42,7 @@ class Point:
         return Point(self.x + x, self.y + y) 
 
 class Pacman(arcade.View):
-    def __init__(self, parser: ConfigData,):
+    def __init__(self, parser: ConfigData):
         self.parser = parser
         self.wall_color = arcade.color.BLUE
         super().__init__(background_color=arcade.color.PINK_SHERBET)
@@ -43,15 +50,18 @@ class Pacman(arcade.View):
         # maze config
         self.maze = MazeGenerator(seed=self.parser.seed, size=(self.parser.levels[0]["width"], self.parser.levels[0]["height"]))
         self.maze.generate(seed=self.parser.seed)
+
         # camera settings
         self.camera = arcade.Camera2D()
         self.cx, self.cy = self.camera.position
+
         # cell settings
         self.cell_size = 60
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
         self.map_maze_coordinates()
+
         # pac man settings
         self.pac_man_frames = self.load_pacman_frames() 
         self.pac_man_seconds = 0
@@ -64,8 +74,10 @@ class Pacman(arcade.View):
         # speed mechanism
         self.current_index = Point(self.pac_man_possition.x, self.pac_man_possition.y)
         self.speed = 0.01
-        from .pause_menu import Pause_menu
-        self.pause_menu = Pause_menu(self)
+        self.pause_menu: MainMenu | None = None
+
+        # levels
+        self.level_index = 0 
     def init_pacman_possition(self):
         x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
         return Point(x, y)
@@ -163,9 +175,9 @@ class Pacman(arcade.View):
                 return self.pac_man_frames[self.pac_man_frame_index].rotate_90()
             case directions.LEFT:
                 return self.pac_man_frames[self.pac_man_frame_index].flip_horizontally()
-
-
-
+    def setup(self):
+        px, py = self.pac_man_possition
+        self.visited_cells.add((px, py))
 
     def on_draw(self):
         self.clear()
@@ -203,4 +215,8 @@ class Pacman(arcade.View):
         if symbol == arcade.key.UP or symbol == arcade.key.W:
             self.next_key = directions.UP
         if symbol == arcade.key.ESCAPE:
-            self.window.show_view(self.pause_menu)
+            if self.pause_menu is not None:
+                image = arcade.get_image()
+                image = image.filter(ImageFilter.GaussianBlur(radius=5))
+                self.pause_menu.image = image
+                self.window.show_view(self.pause_menu)

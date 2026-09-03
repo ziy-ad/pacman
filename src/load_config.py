@@ -17,7 +17,7 @@ class ConfigData:
     points_per_pacgum: int
     points_per_super_pacgum: int
     points_per_ghost: int
-    seed: None | int | float | str | bytes
+    seed: int
     level_max_time: int
 
 class ParseConfig:
@@ -127,7 +127,7 @@ class ParseConfig:
             return "".join(out)
 
 
-        print(strip_json_comments(filtred_file))
+        # print(strip_json_comments(filtred_file))
         # filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
         # filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
         # filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
@@ -218,7 +218,7 @@ class ParseConfig:
                 validated_data["level_max_time"] = level_max_time
 
         if "levels" in self.loaded_json.keys():
-            levels = self.loaded_json.get("levels")
+            levels = self.loaded_json.get("levels", [])
 
             for i, level in enumerate(levels):
                 use_default = 0

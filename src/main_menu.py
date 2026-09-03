@@ -1,23 +1,40 @@
 import arcade
-from .pacman import Pacman
-
+from PIL import Image
+from typing import TYPE_CHECKING
+from .pause_menu import speed_view 
+if TYPE_CHECKING:
+    from .pacman import Pacman
 
 class MainMenu(arcade.View):
-    def __init__(self, window: arcade.Window, game_view: Pacman) -> None:
+    def __init__(self, window: arcade.Window, game_view: "Pacman") -> None:
         super().__init__(window, background_color=arcade.color.BLACK)
         self.game_view = game_view
-
-        self.buttons = ["Play", "Settings", "Quit"]
+        self.game_view.setup()
+        self.game_view.pause_menu = self
+        self.playing = False
+        self.buttons = ["Play", "Speed", "Quit"]
         self.selected = 0
+        self.image: Image.Image | None = None
         self.button_width = 250
         self.button_height = 50
         self.button_spacing = 20
-
+        self.speed_view = speed_view(self)
     def on_draw(self):
         self.clear()
         cx = self.width // 2
         cy = self.height // 2
-
+        if self.image:
+            self.pause_background = arcade.Texture(
+                name="pause_background",
+                image=self.image
+            )
+            arcade.draw_texture_rect(
+                self.pause_background,
+                arcade.LRBT(
+                    0, self.width,
+                    0, self.height
+                )
+            )
         for i, label in enumerate(self.buttons):
             y = cy - i * (self.button_height + self.button_spacing)
             if i == self.selected:
@@ -48,6 +65,11 @@ class MainMenu(arcade.View):
 
         elif symbol == arcade.key.RETURN:
             if self.buttons[self.selected] == "Play":
+                self.buttons[self.selected] = "Resume"
                 self.window.show_view(self.game_view)
+            elif self.buttons[self.selected] == "Resume":
+                self.window.show_view(self.game_view)
+            elif self.buttons[self.selected] == "Speed":
+                self.window.show_view(self.speed_view)
             elif self.buttons[self.selected] == "Quit":
                 arcade.exit()

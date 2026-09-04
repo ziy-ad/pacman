@@ -57,16 +57,19 @@ class MainMenu(arcade.View):
                 self.buttons[0] = "Resume"
                 if self.game_view.start_time is None:
                     self.game_view.start_time = time.time()
+                self.game_view.resume()
                 self.window.show_view(self.game_view)
             elif label == "Settings":
+                self.game_view.pause()
                 self.window.show_view(speed_view(self))
             elif label == "Highscores":
+                self.game_view.pause()
                 self.window.show_view(ScoreboardView(self.window, self.game_view.scoreboard, self.game_view))
             elif label == "Quit":
                 arcade.exit()
-        elif symbol == arcade.key.ESCAPE:
-            if self.is_started:
-                self.window.show_view(self.game_view)
+        elif symbol == arcade.key.ESCAPE and self.is_started and self.game_view.pause_start is not None:
+            self.game_view.resume()
+            self.window.show_view(self.game_view)
 
 
 
@@ -118,6 +121,7 @@ class GameOverView(arcade.View):
             self.input_name = self.input_name[:-1]
         elif symbol == arcade.key.ESCAPE:
             self.pacman_view.reset()
+            self.pacman_view.score = 0
             self.window.show_view(MainMenu(self.window, self.pacman_view))
 
     def on_text(self, text: str) -> None:

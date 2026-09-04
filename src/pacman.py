@@ -66,6 +66,7 @@ class Pacman(arcade.View):
         self.edible_duration = 0.0
         self.edible_time = 0.0
         self.speed = 0.05
+        self.lives = self.parser.lives
         self.scoreboard.load_scores()
         # spawn the ghosts in the corners of the maze
         self.corner_grid_coords = [
@@ -86,6 +87,7 @@ class Pacman(arcade.View):
         self.ghost_list = arcade.SpriteList()
 
         self.start_time = None
+        self.pause_start = None
 
         for position, name in zip(self.corner_grid_coords, self.ghost_name):
             ghost_class = globals()[name]
@@ -95,11 +97,24 @@ class Pacman(arcade.View):
             ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
             self.ghost_list.append(ghost.sprite)
             self.ghosts[name] = ghost
-    def reset(self):
+    def reset(self, death=False):
         self.set_ghosts()
-        self.visited_cells.clear()
+        if not death:
+            self.visited_cells.clear()
+        if death:
+            self.start_time = time.time()
+            self.pause_start = None
         self.pac_man_possition = self.init_pacman_possition()
         self.caught_by_ghost = False
+
+    def pause(self):
+        if self.start_time is not None and self.pause_start is None:
+            self.pause_start = time.time()
+
+    def resume(self):
+        if self.pause_start is not None and self.start_time is not None:
+            self.start_time += time.time() - self.pause_start
+            self.pause_start = None
 
 
 
@@ -183,6 +198,10 @@ class Pacman(arcade.View):
                 self.current_index.y = target
 
     def on_update(self, delta_time):
+        if self.start_time:
+            if time.time() - self.start_time >= self.parser.level_max_time:
+                from .main_menu import GameOverView
+                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
         if self.edible:
             self.edible_duration += delta_time
             if self.edible_duration >= self.edible_time:
@@ -202,9 +221,14 @@ class Pacman(arcade.View):
         if self.caught_by_ghost:
             self.catch_freeze_time += delta_time
             if self.catch_freeze_time >= self.catch_freeze_duration:
-                from .main_menu import GameOverView
-                # pass scoreboard and final score, plus this pacman instance
-                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                self.lives -= 1
+                if self.lives > 0:
+                    self.reset(death=True)
+                else:
+                    self.lives = self.parser.lives
+                    from .main_menu import GameOverView
+                    # pass scoreboard and final score, plus this pacman instance
+                    self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
             return
         self.pac_man_seconds += delta_time
         if self.pac_man_seconds >= 0.2:
@@ -345,6 +369,7 @@ class Pacman(arcade.View):
         if symbol == arcade.key.RIGHT or symbol == arcade.key.D:
             self.next_key = directions.RIGHT
         if symbol == arcade.key.ESCAPE:
+            self.pause()
             self.window.show_view(self.main_menu)
         elif symbol == arcade.key.LEFT or symbol == arcade.key.A:
             self.next_key = directions.LEFT            

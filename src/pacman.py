@@ -66,6 +66,7 @@ class Pacman(arcade.View):
         self.edible_duration = 0.0
         self.edible_time = 0.0
         self.speed = 0.05
+        self.current_level = 0
         self.lives = self.parser.lives
         self.scoreboard.load_scores()
         # spawn the ghosts in the corners of the maze
@@ -79,6 +80,25 @@ class Pacman(arcade.View):
         self.ghost_name = ["PinkGhost", "RedGhost", "OrangeGhost", "BlueGhost"]
         self.ghost_speed = self.speed
         self.set_ghosts()
+
+    def maze_init(self):
+        if self.current_level == 0:
+            self.maze = MazeGenerator(seed=self.parser.seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
+            self.maze.generate(seed=self.parser.seed)
+        else:
+            random_seed = random.randint(0, 1000000)
+            self.maze = MazeGenerator(seed=random_seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
+            self.maze.generate(seed=random_seed)
+        self.cell_positions = [[] for i in  range(len(self.maze.maze))]
+        self.forbiden_cells = set()
+        self.points_cord = {}
+        self.map_maze_coordinates()
+        self.pac_man_possition = self.init_pacman_possition()
+        self.visited_cells = set()
+        self.pac_man_grid = (len(self.maze.maze[0]) // 2, len(self.maze.maze) // 2)
+        self.used_cells = set()
+        self.reset(death=True)
+
 
     def set_main_menu(self, main_menu):
         self.main_menu = main_menu
@@ -115,7 +135,6 @@ class Pacman(arcade.View):
         if self.pause_start is not None and self.start_time is not None:
             self.start_time += time.time() - self.pause_start
             self.pause_start = None
-
 
 
 
@@ -352,9 +371,13 @@ class Pacman(arcade.View):
             
             # print(len(self.visited_cells), len(self.forbiden_cells))
             if len(self.visited_cells) + len(self.forbiden_cells) == len(self.points_cord):
-                from .main_menu import GameOverView
-                # pass scoreboard and final score, plus this pacman instance
-                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                if self.current_level + 1 < len(self.parser.levels):
+                    self.current_level += 1
+                    self.maze_init()
+                else:
+                    from .main_menu import GameOverView
+                    # pass scoreboard and final score, plus this pacman instance
+                    self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
 
             self.ghost_list.draw()
 

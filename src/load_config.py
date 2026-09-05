@@ -5,8 +5,8 @@ import random
 from pathlib import Path
 from dataclasses import dataclass
 
-MIN_LENGTH = 5
-MAX_LENGTH = 51
+MIN_LENGTH = 10
+MAX_LENGTH = 40
 
 @dataclass
 class ConfigData:
@@ -270,3 +270,4 @@ class ParseConfig:
                         default_levels.append(default_levels[i % 10])
 
         return validated_data
+    

@@ -39,7 +39,7 @@ class Pacman(arcade.View):
         self.camera = arcade.Camera2D()
         self.cx, self.cy = self.camera.position
         # cell settings
-        self.cell_size = 60
+        self.cell_size = 30
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
@@ -111,7 +111,7 @@ class Pacman(arcade.View):
 
         for position, name in zip(self.corner_grid_coords, self.ghost_name):
             ghost_class = globals()[name]
-            ghost = ghost_class(position, self.ghost_speed)
+            ghost = ghost_class(position)
             gx, gy = position
             ghost.sprite.center_x, ghost.sprite.center_y = self.cell_positions[gy][gx]
             ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
@@ -274,8 +274,8 @@ class Pacman(arcade.View):
 
         for ghost in self.ghosts.values():
             # Check if ghost has reached the center of its target cell
-            if abs(ghost.sprite.center_x - ghost.target_x) <= ghost.speed and \
-                abs(ghost.sprite.center_y - ghost.target_y) <= ghost.speed:
+            if abs(ghost.sprite.center_x - ghost.target_x) <= self.ghost_speed and \
+                abs(ghost.sprite.center_y - ghost.target_y) <= self.ghost_speed:
                 
                 # Snap to exact target to prevent floating point drift
                 ghost.sprite.center_x = ghost.target_x
@@ -296,14 +296,14 @@ class Pacman(arcade.View):
             
             # Smoothly move the sprite towards the target position
             if ghost.sprite.center_x < ghost.target_x:
-                ghost.sprite.center_x += self.cell_size * ghost.speed
+                ghost.sprite.center_x += self.cell_size * self.ghost_speed
             elif ghost.sprite.center_x > ghost.target_x:
-                ghost.sprite.center_x -= self.cell_size *  ghost.speed
+                ghost.sprite.center_x -= self.cell_size *  self.ghost_speed
                 
             if ghost.sprite.center_y < ghost.target_y:
-                ghost.sprite.center_y += self.cell_size *  ghost.speed
+                ghost.sprite.center_y += self.cell_size *  self.ghost_speed
             elif ghost.sprite.center_y > ghost.target_y:
-                ghost.sprite.center_y -= self.cell_size *  ghost.speed
+                ghost.sprite.center_y -= self.cell_size *  self.ghost_speed
         self.used_cells = set()
 
         catch_distance = self.cell_size * 0.5
@@ -366,7 +366,7 @@ class Pacman(arcade.View):
             px, py = self.pac_man_possition
             if (px, py) in self.points_cord:
                 self.visited_cells.add((px, py))
-            pac_man = arcade.XYWH(px , py, 40, 40)
+            pac_man = arcade.XYWH(px , py, 20, 20)
             arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)
             
             # print(len(self.visited_cells), len(self.forbiden_cells))

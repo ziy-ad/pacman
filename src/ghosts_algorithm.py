@@ -20,10 +20,9 @@ class moves(Enum):
 
 
 class Ghost(ABC):
-    def __init__(self, coordinates, speed):
+    def __init__(self, coordinates):
         self.coordinates: tuple[int, int] = coordinates
         self.init_coord: tuple[int, int] = coordinates
-        self.speed = speed
         self.last_coordinates = []
         self.target_x = 0
         self.target_y = 0
@@ -176,9 +175,11 @@ class Ghost(ABC):
 
 
 class BlueGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
+    def __init__(self, coordinates):
+        super().__init__(coordinates)
         self.sprite = arcade.Sprite("src/assets/blueghost.png", scale=0.1)
+        self.sprite.width = 20
+        self.sprite.height = 20
         self.required_time = 3
 
     def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
@@ -201,9 +202,11 @@ class BlueGhost(Ghost):
 
 
 class PinkGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
+    def __init__(self, coordinates):
+        super().__init__(coordinates)
         self.sprite = arcade.Sprite("src/assets/pinkghost.png", scale=0.1)
+        self.sprite.width = 20
+        self.sprite.height = 20
         self.required_time = 0
 
     def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
@@ -221,9 +224,11 @@ class PinkGhost(Ghost):
 
 
 class RedGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
+    def __init__(self, coordinates):
+        super().__init__(coordinates)
         self.sprite = arcade.Sprite("src/assets/redghost.png", scale=0.1)
+        self.sprite.width = 20
+        self.sprite.height = 20
         self.required_time = 6
 
     def get_path(self, start_time, used_cells, maze, pacman_pos, edible, last_key=None):
@@ -259,9 +264,11 @@ class RedGhost(Ghost):
 
 
 class OrangeGhost(Ghost):
-    def __init__(self, coordinates, speed):
-        super().__init__(coordinates, speed)
+    def __init__(self, coordinates, ):
+        super().__init__(coordinates)
         self.sprite = arcade.Sprite("src/assets/orangeghost.png", scale=0.1)
+        self.sprite.width = 20
+        self.sprite.height = 20
         self.required_time = 9
         self.min_distance = 6
 

@@ -18,7 +18,7 @@
     # Level settings — one entry per level, array can have 10+ entries
     "level_max_time": 90,
     "levels": [
-        { "width": 10, "height": 10 },
+        { "width": 10, "height": 10},
         { "width": 25, "height": 25 },
         { "width": 29, "height": 25 },
         { "width": 29, "height": 29 },

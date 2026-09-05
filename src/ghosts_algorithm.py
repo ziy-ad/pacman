@@ -193,7 +193,6 @@ class BlueGhost(Ghost):
         if edible:
             return self.run_away(maze, pacman_pos, self.last_coordinates)
 
-        # return run_away(self.coordinates, maze, pacman_pos, self.last_coordinates)
         if pacman_pos in used_cells:
             return self.random_next_move(maze)
 

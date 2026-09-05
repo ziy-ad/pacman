@@ -82,13 +82,9 @@ class Pacman(arcade.View):
         self.set_ghosts()
 
     def maze_init(self):
-        if self.current_level == 0:
-            self.maze = MazeGenerator(seed=self.parser.seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
-            self.maze.generate(seed=self.parser.seed)
-        else:
-            random_seed = random.randint(0, 1000000)
-            self.maze = MazeGenerator(seed=random_seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
-            self.maze.generate(seed=random_seed)
+        random_seed = random.randint(0, 1000000)
+        self.maze = MazeGenerator(seed=random_seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
+        self.maze.generate(seed=random_seed)
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
@@ -99,15 +95,22 @@ class Pacman(arcade.View):
         self.used_cells = set()
         self.reset(death=True)
 
-
     def set_main_menu(self, main_menu):
         self.main_menu = main_menu
+
     def set_ghosts(self):
         self.ghosts = {}
         self.ghost_list = arcade.SpriteList()
 
         self.start_time = None
         self.pause_start = None
+        self.corner_grid_coords = [
+                    (0, 0),
+                    (len(self.maze.maze[0]) - 1, 0),
+                    (0, len(self.maze.maze) - 1),
+                    (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
+                ]
+        self.positions = [self.cell_positions[0][0], self.cell_positions[0][-1], self.cell_positions[-1][0], self.cell_positions[-1][-1]]
 
         for position, name in zip(self.corner_grid_coords, self.ghost_name):
             ghost_class = globals()[name]
@@ -117,6 +120,7 @@ class Pacman(arcade.View):
             ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
             self.ghost_list.append(ghost.sprite)
             self.ghosts[name] = ghost
+
     def reset(self, death=False):
         self.set_ghosts()
         if not death:
@@ -135,7 +139,6 @@ class Pacman(arcade.View):
         if self.pause_start is not None and self.start_time is not None:
             self.start_time += time.time() - self.pause_start
             self.pause_start = None
-
 
 
     def init_pacman_possition(self):
@@ -225,6 +228,7 @@ class Pacman(arcade.View):
             self.edible_duration += delta_time
             if self.edible_duration >= self.edible_time:
                 self.edible = False
+                self.ghost_speed = self.ghost_speed * 1.2
                 self.edible_duration = 0.0
                 self.edible_time = 0.0
         for ghost in self.ghosts.values():
@@ -274,8 +278,10 @@ class Pacman(arcade.View):
 
         for ghost in self.ghosts.values():
             # Check if ghost has reached the center of its target cell
-            if abs(ghost.sprite.center_x - ghost.target_x) <= self.ghost_speed and \
-                abs(ghost.sprite.center_y - ghost.target_y) <= self.ghost_speed:
+            ghost_step = self.cell_size * self.ghost_speed
+
+            if abs(ghost.sprite.center_x - ghost.target_x) <= ghost_step and \
+                abs(ghost.sprite.center_y - ghost.target_y) <= ghost_step:
                 
                 # Snap to exact target to prevent floating point drift
                 ghost.sprite.center_x = ghost.target_x
@@ -296,14 +302,14 @@ class Pacman(arcade.View):
             
             # Smoothly move the sprite towards the target position
             if ghost.sprite.center_x < ghost.target_x:
-                ghost.sprite.center_x += self.cell_size * self.ghost_speed
+                ghost.sprite.center_x += ghost_step
             elif ghost.sprite.center_x > ghost.target_x:
-                ghost.sprite.center_x -= self.cell_size *  self.ghost_speed
+                ghost.sprite.center_x -= ghost_step
                 
             if ghost.sprite.center_y < ghost.target_y:
-                ghost.sprite.center_y += self.cell_size *  self.ghost_speed
+                ghost.sprite.center_y += ghost_step
             elif ghost.sprite.center_y > ghost.target_y:
-                ghost.sprite.center_y -= self.cell_size *  self.ghost_speed
+                ghost.sprite.center_y -= ghost_step
         self.used_cells = set()
 
         catch_distance = self.cell_size * 0.5
@@ -359,6 +365,7 @@ class Pacman(arcade.View):
                     if self.points_cord[(px, py)] in self.corner_grid_coords:
                         self.score += self.parser.points_per_super_pacgum
                         self.edible = True
+                        self.ghost_speed = self.ghost_speed * 0.8
                         self.edible_time += 5
                     else:
                         self.score += self.parser.points_per_pacgum

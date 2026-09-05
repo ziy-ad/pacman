@@ -3,7 +3,7 @@ from .pacman import Pacman
 from .score_tracker import score_board
 import re
 import time
-from .speed_screen import speed_view
+from .speed_screen import CheatModeView, speed_view
 
 
 class MainMenu(arcade.View):
@@ -11,7 +11,7 @@ class MainMenu(arcade.View):
         super().__init__(window, background_color=arcade.color.BLACK)
         self.game_view = game_view
         self.is_started = False
-        self.buttons = ["Play", "Highscores", "Settings", "Quit"]
+        self.buttons = ["Play", "Highscores", "CheatMode", "Quit"]
         self.selected = 0
         self.button_width = 250
         self.button_height = 50
@@ -59,9 +59,9 @@ class MainMenu(arcade.View):
                     self.game_view.start_time = time.time()
                 self.game_view.resume()
                 self.window.show_view(self.game_view)
-            elif label == "Settings":
+            elif label == "CheatMode":
                 self.game_view.pause()
-                self.window.show_view(speed_view(self))
+                self.window.show_view(CheatModeView(self))
             elif label == "Highscores":
                 self.game_view.pause()
                 self.window.show_view(ScoreboardView(self.window, self.game_view.scoreboard, self.game_view))

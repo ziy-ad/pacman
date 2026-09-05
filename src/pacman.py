@@ -25,6 +25,13 @@ class Point:
         yield self.x
         yield self.y
 
+class CheatMode:
+    def __init__(self):
+        self.invincible = False
+        self.ghost_freeze = False
+        self.extra_lives = 0
+        self.level_skip = False
+
 
 class Pacman(arcade.View):
     def __init__(self, parser: ConfigData):
@@ -47,6 +54,7 @@ class Pacman(arcade.View):
         # pac man settings
         self.pac_man_frames = self.load_pacman_frames() 
         self.pac_man_seconds = 0
+        self.cheater = CheatMode()
         self.pac_man_next = 1
         self.pac_man_frame_index = 0
         self.pac_man_possition = self.init_pacman_possition()
@@ -142,7 +150,10 @@ class Pacman(arcade.View):
 
 
     def init_pacman_possition(self):
-        x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
+        # Use separate midpoints for rows and columns (handles non-square mazes)
+        mid_row = len(self.cell_positions) // 2
+        mid_col = len(self.cell_positions[0]) // 2
+        x, y = self.cell_positions[mid_row][mid_col]
         self.current_index = Point(x, y)
         return Point(x, y)
 
@@ -220,6 +231,17 @@ class Pacman(arcade.View):
                 self.current_index.y = target
 
     def on_update(self, delta_time):
+        if self.cheater.level_skip:
+            self.cheater.level_skip = False
+            if self.current_level + 1 < len(self.parser.levels):
+                self.current_level += 1
+                self.start_time = None
+                self.maze_init()
+            else:
+                from .main_menu import GameOverView
+                # pass scoreboard and final score, plus this pacman instance
+                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+
         if self.start_time:
             if time.time() - self.start_time >= self.parser.level_max_time:
                 from .main_menu import GameOverView
@@ -289,7 +311,10 @@ class Pacman(arcade.View):
 
                 # Ask AI for the next grid cell to move to
                 # position = self.cell_positions[self.pac_man_possition.y][self.pac_man_possition.x]
-                next_cell = ghost.get_path(self.start_time, self.used_cells, self.maze, self.pac_man_grid, self.edible, last_key=self.current_key)
+                if not self.cheater.ghost_freeze:
+                    next_cell = ghost.get_path(self.start_time, self.used_cells, self.maze, self.pac_man_grid, self.edible, last_key=self.current_key)
+                else:
+                    next_cell = None
                 
                 if next_cell:
                     self.used_cells.add(next_cell)
@@ -320,7 +345,7 @@ class Pacman(arcade.View):
                     ghost.eatable = True
                     self.score += self.parser.points_per_ghost
                 else:
-                    if not ghost.eatable:
+                    if not ghost.eatable and not self.cheater.invincible:
                         self.catch_freeze_time = 0.0
                         self.caught_by_ghost = True
                         break
@@ -380,6 +405,8 @@ class Pacman(arcade.View):
             if len(self.visited_cells) + len(self.forbiden_cells) == len(self.points_cord):
                 if self.current_level + 1 < len(self.parser.levels):
                     self.current_level += 1
+                    self.start_time = time.time()
+                    self.pause_start = None
                     self.maze_init()
                 else:
                     from .main_menu import GameOverView
@@ -407,3 +434,4 @@ class Pacman(arcade.View):
             self.next_key = directions.DOWN            
         elif symbol == arcade.key.UP or symbol == arcade.key.W:
             self.next_key = directions.UP
+ 

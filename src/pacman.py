@@ -8,7 +8,7 @@ import time
 from .ghosts_algorithm import *
 from .score_tracker import score_board
 from pathlib import Path
-
+from .ghosts_algorithm import *
 install()
 
 class directions(IntFlag):
@@ -110,15 +110,13 @@ class Pacman(arcade.View):
                     (0, len(self.maze.maze) - 1),
                     (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
                 ]
-        self.positions = [self.cell_positions[0][0], self.cell_positions[0][-1], self.cell_positions[-1][0], self.cell_positions[-1][-1]]
-
         for position, name in zip(self.corner_grid_coords, self.ghost_name):
             ghost_class = globals()[name]
-            ghost = ghost_class(position)
+            ghost = ghost_class(position, self.maze.maze)
             gx, gy = position
-            ghost.sprite.center_x, ghost.sprite.center_y = self.cell_positions[gy][gx]
+            ghost.center_x, ghost.center_y = self.cell_positions[gy][gx]
             ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
-            self.ghost_list.append(ghost.sprite)
+            self.ghost_list.append(ghost)
             self.ghosts[name] = ghost
 
     def reset(self, death=False):
@@ -231,16 +229,7 @@ class Pacman(arcade.View):
                 self.ghost_speed = self.ghost_speed * 1.2
                 self.edible_duration = 0.0
                 self.edible_time = 0.0
-        for ghost in self.ghosts.values():
-            if ghost.eatable:
-                ghost.time_to_respawn += delta_time
-                if ghost.time_to_respawn >= 5.0:
-                    ghost.eatable = False
-                    ghost.time_to_respawn = 0.0
-                    ghost.coordinates = ghost.init_coord
-                    gx, gy = ghost.coordinates
-                    ghost.sprite.center_x, ghost.sprite.center_y = self.cell_positions[gy][gx]
-                    ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
+
         if self.caught_by_ghost:
             self.catch_freeze_time += delta_time
             if self.catch_freeze_time >= self.catch_freeze_duration:
@@ -270,52 +259,11 @@ class Pacman(arcade.View):
             self.pac_man_grid = grid_lookup
 
 
-        self.ghost_list = arcade.SpriteList()
-        for ghost in self.ghosts.values():
-            if not ghost.eatable:
-                self.ghost_list.append(ghost.sprite)
-                self.used_cells.add(ghost.coordinates)
-
-        for ghost in self.ghosts.values():
-            # Check if ghost has reached the center of its target cell
-            ghost_step = self.cell_size * self.ghost_speed
-
-            if abs(ghost.sprite.center_x - ghost.target_x) <= ghost_step and \
-                abs(ghost.sprite.center_y - ghost.target_y) <= ghost_step:
-                
-                # Snap to exact target to prevent floating point drift
-                ghost.sprite.center_x = ghost.target_x
-                ghost.sprite.center_y = ghost.target_y
-
-                # Ask AI for the next grid cell to move to
-                # position = self.cell_positions[self.pac_man_possition.y][self.pac_man_possition.x]
-                next_cell = ghost.get_path(self.start_time, self.used_cells, self.maze, self.pac_man_grid, self.edible, last_key=self.current_key)
-                
-                if next_cell:
-                    self.used_cells.add(next_cell)
-                    gx, gy = next_cell
-                    if len(ghost.last_coordinates) > 2:
-                        ghost.last_coordinates.pop(0)
-                    ghost.last_coordinates.append(ghost.coordinates)
-                    ghost.coordinates = (gx, gy)
-                    ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
-            
-            # Smoothly move the sprite towards the target position
-            if ghost.sprite.center_x < ghost.target_x:
-                ghost.sprite.center_x += ghost_step
-            elif ghost.sprite.center_x > ghost.target_x:
-                ghost.sprite.center_x -= ghost_step
-                
-            if ghost.sprite.center_y < ghost.target_y:
-                ghost.sprite.center_y += ghost_step
-            elif ghost.sprite.center_y > ghost.target_y:
-                ghost.sprite.center_y -= ghost_step
-        self.used_cells = set()
 
         catch_distance = self.cell_size * 0.5
         for ghost in self.ghosts.values():
-            if abs(ghost.sprite.center_x - px) <= catch_distance and \
-            abs(ghost.sprite.center_y - py) <= catch_distance:
+            if abs(ghost.center_x - px) <= catch_distance and \
+            abs(ghost.center_y - py) <= catch_distance:
                 if self.edible:
                     ghost.eatable = True
                     self.score += self.parser.points_per_ghost

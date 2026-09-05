@@ -10,8 +10,10 @@ class MainMenu(arcade.View):
     def __init__(self, window: arcade.Window, game_view: Pacman) -> None:
         super().__init__(window, background_color=arcade.color.BLACK)
         self.game_view = game_view
-        self.is_started = False
+        self.is_started = (self.game_view.start_time is not None)
         self.buttons = ["Play", "Highscores", "CheatMode", "Quit"]
+        if self.is_started:
+            self.buttons[0] = "Resume"
         self.selected = 0
         self.button_width = 250
         self.button_height = 50
@@ -183,6 +185,5 @@ class ScoreboardView(arcade.View):
 
     def on_key_press(self, symbol, modifiers):
         if symbol in (arcade.key.RETURN, arcade.key.ENTER, arcade.key.ESCAPE):
-            # Return to main menu; reuse pacman_view instance
-            self.pacman_view.reset()
+            # Return to main menu; reuse pacman_view instance without resetting
             self.window.show_view(MainMenu(self.window, self.pacman_view))

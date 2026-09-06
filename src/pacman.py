@@ -46,11 +46,44 @@ class Pacman(arcade.View):
         self.camera = arcade.Camera2D()
         self.cx, self.cy = self.camera.position
         # cell settings
-        self.cell_size = min(self.width / len(self.maze.maze[0]), self.height / len(self.maze.maze))
+        self.cell_size = min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze))
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
         self.map_maze_coordinates()
+
+        self.assets_path = Path(__file__).resolve().parent / "assets"
+        arcade.load_font(str(self.assets_path / "Silkscreen-Regular.ttf"))
+        arcade.load_font(str(self.assets_path / "Silkscreen-Bold.ttf"))
+
+        self.label_level = arcade.Text(
+            "LEVEL",
+            self.width - 60,
+            self.height - 40,
+            arcade.color.WHITE,
+            font_size=18,
+            bold=True,
+            anchor_x="right",
+            font_name="Silkscreen")
+
+        # Dynamic values (updated as the game runs)
+        self.score_text = arcade.Text(
+            "000000",
+            50,
+            self.height - 65,
+            arcade.color.YELLOW,
+            font_size=20,
+            bold=True,
+            font_name="Silkscreen")
+        self.level_text = arcade.Text(
+            "01",
+            self.width - 10,
+            self.height - 40,
+            arcade.color.CYAN,
+            font_size=20,
+            bold=True,
+            anchor_x="right",
+            font_name="Silkscreen")
         # pac man settings
         self.pac_man_frames = self.load_pacman_frames() 
         self.pac_man_seconds = 0
@@ -90,7 +123,6 @@ class Pacman(arcade.View):
         self.ghost_name = ["PinkGhost", "RedGhost", "OrangeGhost", "BlueGhost"]
         self.ghost_speed = self.speed
         self.set_ghosts()
-
     def maze_init(self):
         random_seed = random.randint(0, 1000000)
         self.maze = MazeGenerator(seed=random_seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
@@ -155,11 +187,26 @@ class Pacman(arcade.View):
         return Point(x, y)
 
     def load_pacman_frames(self):
-        return  [
+        frames = [
             arcade.load_texture("src/assets/pacman_closed.png"),
             arcade.load_texture("src/assets/pacman_half.png"),
             arcade.load_texture("src/assets/pacman_open.png"),
         ]
+        directions_ = [directions.RIGHT, directions.UP, directions.DOWN, directions.LEFT]
+        all_frames = {}
+        for dir in directions_:
+            all_frames.setdefault(dir, [])
+            for frame in frames:
+                match dir:
+                    case directions.UP:
+                        all_frames[dir] += [frame.rotate_270()]
+                    case directions.RIGHT:
+                        all_frames[dir] += [frame]
+                    case directions.DOWN:
+                        all_frames[dir] += [frame.rotate_90()]
+                    case directions.LEFT:
+                        all_frames[dir] += [frame.flip_horizontally()]
+        return all_frames
 
     def map_maze_coordinates(self):
         num_rows = len(self.maze.maze)
@@ -171,7 +218,7 @@ class Pacman(arcade.View):
 
         # Top-left cell center, so the whole grid is centered on the window
         start_x = (self.width  - maze_pixel_w) // 2 + self.cell_size // 2
-        start_y = (self.height + maze_pixel_h) // 2 - self.cell_size // 2
+        start_y = (((self.height - 80) + maze_pixel_h) // 2 - self.cell_size // 2) 
 
         for idy, row in enumerate(self.maze.maze):
             y = start_y - idy * self.cell_size
@@ -245,20 +292,27 @@ class Pacman(arcade.View):
                 self.edible_time += 5
             else:
                 self.score += self.parser.points_per_pacgum
-
-    def on_update(self, delta_time):
-        self.update_pacman_animation(delta_time)
-        self.update_pac_gum_count()
-        if self.start_time:
-            if time.time() - self.start_time >= self.parser.level_max_time:
-                from .main_menu import GameOverView
-                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+    def is_touching_ghost(self, ghost: Ghost):
+        catch_distance = self.cell_size * 0.4
+        px, py = self.pac_man_possition
+        return (
+            abs(ghost.center_x - px) <= catch_distance and 
+            abs(ghost.center_y - py) <= catch_distance
+        )
+    def check_toucing_ghosts(self):
+        for ghost in self.ghost_list:
+            is_touching = self.is_touching_ghost(ghost)
+            if is_touching and not ghost.eatable:
+                ghost.eatable = True
+    def handle_edible(self, delta_time):
         if self.edible:
             self.edible_duration += delta_time
             if self.change_ghost_texture:
                 for ghost in self.ghost_list:
                     ghost.texture = ghost.fight_mode_texture
                     ghost.mode = Ghost_modes.Fight_mode
+            self.check_toucing_ghosts()
+            
             if self.edible_duration >= self.edible_time:
                 self.edible = False
                 self.change_ghost_texture = False
@@ -268,6 +322,15 @@ class Pacman(arcade.View):
                 self.ghost_speed = self.ghost_speed * 1.2
                 self.edible_duration = 0.0
                 self.edible_time = 0.0
+    def on_update(self, delta_time):
+        self.update_pacman_animation(delta_time)
+        self.update_pac_gum_count()
+        self.handle_edible(delta_time)
+        if self.start_time:
+            if time.time() - self.start_time >= self.parser.level_max_time:
+                from .main_menu import GameOverView
+                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+
 
         if self.caught_by_ghost:
             self.catch_freeze_time += delta_time
@@ -300,7 +363,6 @@ class Pacman(arcade.View):
             current_key=self.current_key,
             start_time=self.start_time,
             pac_man_grid=self.pac_man_grid,
-            edible=self.edible
             )
         
         for ghost in self.ghost_list:
@@ -315,41 +377,41 @@ class Pacman(arcade.View):
                         self.caught_by_ghost = True
                         break
         self.used_cells.clear()
-    def get_pac_man_frame(self):
-        match self.current_key:
-            case directions.UP:
-                return self.pac_man_frames[self.pac_man_frame_index].rotate_270()
-            case directions.RIGHT:
-                return self.pac_man_frames[self.pac_man_frame_index]
-            case directions.DOWN:
-                return self.pac_man_frames[self.pac_man_frame_index].rotate_90()
-            case directions.LEFT:
-                return self.pac_man_frames[self.pac_man_frame_index].flip_horizontally()
 
+    def get_pac_man_frame(self):
+            return self.pac_man_frames[self.current_key][self.pac_man_frame_index]
+    def draw_map(self):
+        for idy, row in enumerate(self.cell_positions):
+            for idx, cell in enumerate(row):
+                x, y = cell
+                start_x = x - self.cell_size // 2
+                end_x = x + self.cell_size // 2
+                start_y = y - self.cell_size // 2
+                end_y = y + self.cell_size // 2
+                if self.maze.maze[idy][idx] & directions.UP:
+                    arcade.draw_line(start_x, end_y, end_x, end_y , self.wall_color , line_width=5)
+                if self.maze.maze[idy][idx] & directions.RIGHT:
+                    arcade.draw_line(end_x, start_y , end_x, end_y, self.wall_color , line_width=5)
+                if self.maze.maze[idy][idx] & directions.LEFT:
+                    arcade.draw_line(start_x, start_y, start_x, end_y, self.wall_color , line_width=5)
+                if self.maze.maze[idy][idx] & directions.DOWN:
+                    arcade.draw_line(start_x, start_y , end_x, start_y,self.wall_color , line_width=5)
+                if (x, y) not in self.visited_cells and (idx, idy) not in self.forbiden_cells:
+                    if self.points_cord[(x, y)] in self.corner_grid_coords:
+                        arcade.draw_point(x, y , arcade.color.YELLOW, size=8)
+                    else:
+                        arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
 
     def on_draw(self):
         self.clear()
+        self.score_text.text = f"{self.score:06d}"
+        self.level_text.text = f"{self.current_level + 1:02d}"
+
+        self.score_text.draw()
+        self.label_level.draw()
+        self.level_text.draw()
         with self.camera.activate():
-            text = arcade.Text(f"score: {self.score}", 40, self.height - 100, arcade.color.ALLOY_ORANGE, font_size=30)
-            text.draw()
-            for idy, row in enumerate(self.cell_positions):
-                for idx, cell in enumerate(row):
-                    x, y = cell
-                    if self.maze.maze[idy][idx] & directions.UP:
-                        arcade.draw_line(x - self.cell_size // 2, y + self.cell_size // 2, x + self.cell_size // 2, y + self.cell_size // 2 , self.wall_color , line_width=5)
-                    if self.maze.maze[idy][idx] & directions.RIGHT:
-                        arcade.draw_line(x + self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y + self.cell_size // 2, self.wall_color , line_width=5)
-                    if self.maze.maze[idy][idx] & directions.LEFT:
-                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2, x - self.cell_size // 2 , y + self.cell_size // 2, self.wall_color , line_width=5)
-                    if self.maze.maze[idy][idx] & directions.DOWN:
-                        arcade.draw_line(x - self.cell_size // 2, y - self.cell_size // 2 , x + self.cell_size // 2, y - self.cell_size // 2 ,self.wall_color , line_width=5)
-                    if (x, y) not in self.visited_cells and (idx, idy) not in self.forbiden_cells:
-                        if self.points_cord[(x, y)] in self.corner_grid_coords:
-                            arcade.draw_point(x, y , arcade.color.YELLOW, size=8)
-                        else:
-                            arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
-
-
+            self.draw_map()
             px, py = self.pac_man_possition
             pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
             arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)

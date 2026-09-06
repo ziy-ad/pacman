@@ -45,11 +45,12 @@ class Ghost(arcade.Sprite, ABC):
         current_key = kwargs["current_key"]
         start_time = kwargs["start_time"]
         pac_man_grid = kwargs["pac_man_grid"]
-        edible = kwargs["edible"]
         if self.eatable:
             self.time_to_respawn += delta_time
+            self.visible = False
             if self.time_to_respawn >= 5.0:
                 self.eatable = False
+                self.visible = True
                 self.time_to_respawn = 0.0
                 self.coordinates = self.init_coord
                 gx, gy = self.coordinates
@@ -94,6 +95,7 @@ class Ghost(arcade.Sprite, ABC):
                 self.center_y += ghost_step
             elif self.center_y > self.target_y:
                 self.center_y -= ghost_step
+
     def reset(self, cell_position):
         gx, gy = self.init_coord
         self.coordinates = self.init_coord

@@ -4,7 +4,7 @@ from .pacman import Pacman
 from .main_menu import MainMenu
 def main():
     parse = ParseConfig()
-    window = arcade.Window(fullscreen=True)
+    window = arcade.Window(fullscreen=True, vsync=True)
     pacman = Pacman(parse.valid_data)
     window.show_view(MainMenu(window, pacman))
     window.run()

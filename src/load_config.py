@@ -140,7 +140,7 @@ class ParseConfig:
         """Check if the required keys in the config file and their values are valid, if not log a clear message
         and continue with the default value"""
         default_levels: list[dict] = [
-            {"width": 21, "height": 21},
+            {"width": 40, "height": 5},
             {"width": 25, "height": 25},
             {"width": 29, "height": 25},
             {"width": 29, "height": 29},

@@ -51,15 +51,21 @@ class Pacman(arcade.View):
         self.forbiden_cells = set()
         self.points_cord = {}
         self.map_maze_coordinates()
+        self.lives = self.parser.lives
 
         self.assets_path = Path(__file__).resolve().parent / "assets"
+        self.live_pac_man = arcade.load_texture(self.assets_path / "live_pacman.png")
+        self.dead_pac_man = arcade.load_texture(self.assets_path / "dead_pacman.png")
+        self.live_textures = []
+        for _ in range(self.lives):
+            self.live_textures += [self.live_pac_man]
         arcade.load_font(str(self.assets_path / "Silkscreen-Regular.ttf"))
         arcade.load_font(str(self.assets_path / "Silkscreen-Bold.ttf"))
 
         self.label_level = arcade.Text(
             "LEVEL",
             self.width - 60,
-            self.height - 40,
+            self.height - 50,
             arcade.color.WHITE,
             font_size=18,
             bold=True,
@@ -79,7 +85,7 @@ class Pacman(arcade.View):
         self.score_text = arcade.Text(
             "000000",
             50,
-            self.height - 65,
+            self.height - 50,
             arcade.color.YELLOW,
             font_size=20,
             bold=True,
@@ -87,12 +93,23 @@ class Pacman(arcade.View):
         self.level_text = arcade.Text(
             "01",
             self.width - 10,
-            self.height - 40,
+            self.height - 50,
             arcade.color.CYAN,
             font_size=20,
             bold=True,
             anchor_x="right",
             font_name="Silkscreen")
+        self.timer = self.parser.level_max_time
+        self.timer_text = arcade.Text(
+            "01",
+            self.width // 2 - 300,
+            self.height - 50,
+            arcade.color.GREEN_YELLOW,
+            font_size=20,
+            bold=True,
+            anchor_x="center",
+            font_name="Silkscreen")
+
         # pac man settings
         self.pac_man_frames = self.load_pacman_frames() 
         self.pac_man_seconds = 0
@@ -117,7 +134,6 @@ class Pacman(arcade.View):
         self.edible_time = 0.0
         self.speed = 0.05
         self.current_level = 0
-        self.lives = self.parser.lives
         self.inv_start_time = 0.0
         self.inv_freeze_time = 5.0
         self.scoreboard.load_scores()
@@ -337,8 +353,7 @@ class Pacman(arcade.View):
                 self.edible_duration = 0.0
                 self.edible_time = 0.0
     def on_update(self, delta_time):
-        if self.start_time:
-            print(time.time() - self.start_time)
+        self.timer -= delta_time
         if self.cheater.level_skip:
             self.cheater.level_skip = False
             if self.current_level + 1 < len(self.parser.levels):
@@ -359,6 +374,7 @@ class Pacman(arcade.View):
 
 
         if self.caught_by_ghost:
+            self.timer += delta_time
             self.inv_start_time += delta_time
             self.cheater.invincible = True
             if (time.time() - self.inv_start_time) >= self.inv_freeze_time:
@@ -366,6 +382,7 @@ class Pacman(arcade.View):
                 self.cheater.invincible = False
             if self.catch_freeze_time <= 0.0:
                 self.lives -= 1
+                self.live_textures[self.lives] = self.dead_pac_man
             self.catch_freeze_time += delta_time
             if self.catch_freeze_time >= self.catch_freeze_duration:
                 self.catch_freeze_time = 0.0
@@ -399,7 +416,7 @@ class Pacman(arcade.View):
             pac_man_grid=self.pac_man_grid,
             edible = self.edible,
             cheater=self.cheater
-            )
+        )
         
         for ghost in self.ghost_list:
             if abs(ghost.center_x - px) <= catch_distance and \
@@ -415,6 +432,13 @@ class Pacman(arcade.View):
 
     def get_pac_man_frame(self):
             return self.pac_man_frames[self.current_key][self.pac_man_frame_index]
+
+    def draw_lives(self):
+        start_x = self.width // 2 + 300
+        for texture in self.live_textures:
+            rect = arcade.XYWH(start_x, self.height - 50, 30, 30)
+            arcade.draw_texture_rect(texture, rect)
+            start_x += 35
     def draw_map(self):
         for idy, row in enumerate(self.cell_positions):
             for idx, cell in enumerate(row):
@@ -442,20 +466,21 @@ class Pacman(arcade.View):
 
     def on_draw(self):
         self.clear()
-
+        
         self.score_text.text = f"{self.score:06d}"
         self.level_text.text = f"{self.current_level + 1:02d}"
-
+        self.timer_text.text = f"{int(self.timer // 60):02d}:{int(self.timer % 60):02d}"
+        self.timer_text.draw()
         self.score_text.draw()
         self.label_level.draw()
         self.level_text.draw()
+        self.draw_lives()
         with self.camera.activate():
             self.draw_map()
             px, py = self.pac_man_possition
             pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
             arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)
             
-            # print(len(self.visited_cells), len(self.forbiden_cells))
             if len(self.visited_cells) + len(self.forbiden_cells) == len(self.points_cord):
                 if self.current_level + 1 < len(self.parser.levels):
                     self.current_level += 1

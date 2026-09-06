@@ -58,6 +58,11 @@ class Ghost(arcade.Sprite, ABC):
         start_time = kwargs["start_time"]
         pac_man_grid = kwargs["pac_man_grid"]
         edible = kwargs["edible"]
+        cheater = kwargs["cheater"]
+
+        if cheater.ghost_freeze:
+            return
+
         if self.eatable:
             self.time_to_respawn += delta_time
             self.visible = False

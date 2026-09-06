@@ -119,10 +119,10 @@ class Pacman(arcade.View):
             (0, len(self.maze.maze) - 1),
             (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
         ]
-        self.positions = [self.cell_positions[0][0], self.cell_positions[0][-1], self.cell_positions[-1][0], self.cell_positions[-1][-1]]
         self.ghost_name = ["Pinky", "Blinky", "Clyde", "Inky"]
         self.ghost_speed = self.speed
         self.set_ghosts()
+
     def maze_init(self):
         random_seed = random.randint(0, 1000000)
         self.maze = MazeGenerator(seed=random_seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
@@ -130,11 +130,14 @@ class Pacman(arcade.View):
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
+        self.cell_size = min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze))
         self.map_maze_coordinates()
         self.pac_man_possition = self.init_pacman_possition()
         self.visited_cells = set()
         self.pac_man_grid = (len(self.maze.maze[0]) // 2, len(self.maze.maze) // 2)
+        self.set_ghosts()
         self.reset(death=True)
+
 
     def set_main_menu(self, main_menu):
         self.main_menu = main_menu
@@ -149,6 +152,7 @@ class Pacman(arcade.View):
                     (0, len(self.maze.maze) - 1),
                     (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
                 ]
+        self.ghost_list.clear()
         for position, name in zip(self.corner_grid_coords, self.ghost_name):
             ghost_class = globals()[name]
             ghost = ghost_class(position, self.maze.maze, self.cell_size)
@@ -323,6 +327,16 @@ class Pacman(arcade.View):
                 self.edible_duration = 0.0
                 self.edible_time = 0.0
     def on_update(self, delta_time):
+        if self.cheater.level_skip:
+            self.cheater.level_skip = False
+            if self.current_level + 1 < len(self.parser.levels):
+                self.current_level += 1
+                self.start_time = None
+                self.maze_init()
+            else:
+                from .main_menu import GameOverView
+                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+            return
         self.update_pacman_animation(delta_time)
         self.update_pac_gum_count()
         self.handle_edible(delta_time)
@@ -364,7 +378,8 @@ class Pacman(arcade.View):
             current_key=self.current_key,
             start_time=self.start_time,
             pac_man_grid=self.pac_man_grid,
-            edible = self.edible
+            edible = self.edible,
+            cheater=self.cheater
             )
         
         for ghost in self.ghost_list:

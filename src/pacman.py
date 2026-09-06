@@ -46,7 +46,7 @@ class Pacman(arcade.View):
         self.camera = arcade.Camera2D()
         self.cx, self.cy = self.camera.position
         # cell settings
-        self.cell_size = min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze))
+        self.cell_size = int(min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze)))
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
@@ -64,6 +64,15 @@ class Pacman(arcade.View):
             font_size=18,
             bold=True,
             anchor_x="right",
+            font_name="Silkscreen")
+        self.game_over = arcade.Text(
+            "GAME OVER",
+            self.width // 2,
+            self.height // 2,
+            arcade.color.RED_BROWN,
+            font_size=100,
+            bold=True,
+            anchor_x="center",
             font_name="Silkscreen")
 
         # Dynamic values (updated as the game runs)
@@ -99,7 +108,7 @@ class Pacman(arcade.View):
         self.used_cells = set()
         self.caught_by_ghost = False
         self.catch_freeze_time = 0.0
-        self.catch_freeze_duration = 1.2
+        self.catch_freeze_duration = 2.2
         self.score_path = Path(__file__).resolve().parent.parent / "highscore.json"
         self.scoreboard = score_board(str(self.score_path))
         self.score = 0
@@ -109,9 +118,10 @@ class Pacman(arcade.View):
         self.speed = 0.05
         self.current_level = 0
         self.lives = self.parser.lives
+        self.inv_start_time = 0.0
+        self.inv_freeze_time = 5.0
         self.scoreboard.load_scores()
         self.ghost_list: arcade.SpriteList[Ghost] = arcade.SpriteList()
-
         # spawn the ghosts in the corners of the maze
         self.corner_grid_coords = [
             (0, 0),
@@ -130,20 +140,20 @@ class Pacman(arcade.View):
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
-        self.cell_size = min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze))
+        self.cell_size = int(min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze)))
         self.map_maze_coordinates()
         self.pac_man_possition = self.init_pacman_possition()
         self.visited_cells = set()
         self.pac_man_grid = (len(self.maze.maze[0]) // 2, len(self.maze.maze) // 2)
         self.set_ghosts()
         self.reset(death=True)
+        self.start_time = time.time()
 
 
     def set_main_menu(self, main_menu):
         self.main_menu = main_menu
 
     def set_ghosts(self):
-
         self.start_time = None
         self.pause_start = None
         self.corner_grid_coords = [
@@ -164,11 +174,11 @@ class Pacman(arcade.View):
     def reset(self, death=False):
         if not death:
             self.visited_cells.clear()
+            for ghost in self.ghost_list:
+                ghost.reset(self.cell_positions)
         if death:
-            self.start_time = time.time()
+            # self.start_time = time.time()
             self.pause_start = None
-        for ghost in self.ghost_list:
-            ghost.reset(self.cell_positions)
         self.pac_man_possition = self.init_pacman_possition()
         self.caught_by_ghost = False
 
@@ -246,12 +256,12 @@ class Pacman(arcade.View):
         result = True
         if (x, y) in self.points_cord:
             idx, idy = self.points_cord[(x, y)]
+            result =  not self.maze.maze[idy][idx] & self.current_key
             if not self.maze.maze[idy][idx] & self.next_key:
                 self.current_key = self.next_key
-            result =  not self.maze.maze[idy][idx] & self.current_key
 
         if self.current_key == directions_oposit[self.next_key]:
-            self.current_key = self.next_key  
+            self.current_key = self.next_key
         return result
 
     def make_move(self):
@@ -327,6 +337,8 @@ class Pacman(arcade.View):
                 self.edible_duration = 0.0
                 self.edible_time = 0.0
     def on_update(self, delta_time):
+        if self.start_time:
+            print(time.time() - self.start_time)
         if self.cheater.level_skip:
             self.cheater.level_skip = False
             if self.current_level + 1 < len(self.parser.levels):
@@ -347,9 +359,16 @@ class Pacman(arcade.View):
 
 
         if self.caught_by_ghost:
+            self.inv_start_time += delta_time
+            self.cheater.invincible = True
+            if (time.time() - self.inv_start_time) >= self.inv_freeze_time:
+                self.inv_start_time = 0.0
+                self.cheater.invincible = False
+            if self.catch_freeze_time <= 0.0:
+                self.lives -= 1
             self.catch_freeze_time += delta_time
             if self.catch_freeze_time >= self.catch_freeze_duration:
-                self.lives -= 1
+                self.catch_freeze_time = 0.0
                 self.reset(death=self.lives > 0)
                 if not self.lives > 0:
                     self.lives = self.parser.lives
@@ -385,12 +404,11 @@ class Pacman(arcade.View):
         for ghost in self.ghost_list:
             if abs(ghost.center_x - px) <= catch_distance and \
             abs(ghost.center_y - py) <= catch_distance:
-                if self.edible:
+                if self.edible and not ghost.eatable:
                     ghost.eatable = True
                     self.score += self.parser.points_per_ghost
                 else:
                     if not ghost.eatable and not self.cheater.invincible:
-                        self.catch_freeze_time = 0.0
                         self.caught_by_ghost = True
                         break
         self.used_cells.clear()
@@ -405,6 +423,9 @@ class Pacman(arcade.View):
                 end_x = x + self.cell_size // 2
                 start_y = y - self.cell_size // 2
                 end_y = y + self.cell_size // 2
+
+                rect = arcade.rect.XYWH(x, y, self.cell_size, self.cell_size)
+                arcade.draw_rect_filled(rect, arcade.color.BLACK)
                 if self.maze.maze[idy][idx] & directions.UP:
                     arcade.draw_line(start_x, end_y, end_x, end_y , self.wall_color , line_width=5)
                 if self.maze.maze[idy][idx] & directions.RIGHT:
@@ -421,6 +442,7 @@ class Pacman(arcade.View):
 
     def on_draw(self):
         self.clear()
+
         self.score_text.text = f"{self.score:06d}"
         self.level_text.text = f"{self.current_level + 1:02d}"
 
@@ -446,7 +468,11 @@ class Pacman(arcade.View):
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
 
             self.ghost_list.draw()
-
+            if self.caught_by_ghost and self.lives <= 0:
+                r , g, b , _ = arcade.color.BLACK_LEATHER_JACKET
+                rect = arcade.rect.XYWH(self.width // 2, self.height // 2 , self.width * 2 , self.height * 2)
+                arcade.draw_rect_filled(rect, (r, g, b, 150))
+                self.game_over.draw()
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
         self.cx -= dx
         self.cy -= dy
@@ -466,4 +492,3 @@ class Pacman(arcade.View):
             self.next_key = directions.DOWN            
         elif symbol == arcade.key.UP or symbol == arcade.key.W:
             self.next_key = directions.UP
- 

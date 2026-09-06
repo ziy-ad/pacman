@@ -120,7 +120,7 @@ class Pacman(arcade.View):
             (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
         ]
         self.positions = [self.cell_positions[0][0], self.cell_positions[0][-1], self.cell_positions[-1][0], self.cell_positions[-1][-1]]
-        self.ghost_name = ["PinkGhost", "RedGhost", "OrangeGhost", "BlueGhost"]
+        self.ghost_name = ["Pinky", "Blinky", "Clyde", "Inky"]
         self.ghost_speed = self.speed
         self.set_ghosts()
     def maze_init(self):
@@ -336,12 +336,13 @@ class Pacman(arcade.View):
             self.catch_freeze_time += delta_time
             if self.catch_freeze_time >= self.catch_freeze_duration:
                 self.lives -= 1
-                if self.lives > 0:
-                    self.reset(death=True)
-                else:
+                self.reset(death=self.lives > 0)
+                if not self.lives > 0:
                     self.lives = self.parser.lives
                     from .main_menu import GameOverView
                     # pass scoreboard and final score, plus this pacman instance
+                    self.start_time = None
+                    self.score = 0
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
             return
 

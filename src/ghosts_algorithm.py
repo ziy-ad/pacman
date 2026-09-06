@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import random
 import time
 import arcade
-
+from pathlib import Path
 
 class directions(IntFlag):
     UP = 1
@@ -24,13 +24,15 @@ class Ghost_modes(Enum):
 class Ghost(arcade.Sprite, ABC):
     normal_mode_texture: arcade.Texture
     def __init__(self, coordinates, maze, cell_size):
+        self.all_texture: dict[directions, arcade.Texture] = {}
         super().__init__(scale=0.1 )
         self.maze = maze
         self.cell_size = cell_size
+        self.direction = directions.LEFT
         self.mode = Ghost_modes.Chase_mode
-        self.fight_mode_texture = arcade.load_texture("src/assets/blueghost.png")
-        self.width = self.cell_size * 0.2
-        self.height = self.cell_size * 0.2
+        self.fight_mode_texture = arcade.load_texture("src/assets/ghosts/fright/frightened_blue.png")
+        self.width = self.cell_size * 0.7
+        self.height = self.cell_size * 0.7
         self.coordinates: tuple[int, int] = coordinates
         self.init_coord: tuple[int, int] = coordinates
         self.last_coordinates = []
@@ -38,6 +40,16 @@ class Ghost(arcade.Sprite, ABC):
         self.target_y = 0
         self.eatable = False
         self.time_to_respawn = 0
+        self.load_textures()
+        self.normal_mode_texture = self.all_texture[self.direction]
+        self.texture = self.normal_mode_texture
+    def load_textures(self):
+        assets_path = Path(__file__).resolve().parent / "assets" / "ghosts"
+        for dir in directions:
+            path = assets_path / self.__class__.__name__ / (str(dir.name).lower() + ".png")
+            self.all_texture[dir] = arcade.load_texture(path)
+        
+
     def update(self, delta_time: float = 1 / 60, *args, **kwargs) -> None:
         cell_positions = kwargs["cell_positions"]
         used_cells = kwargs["used_cells"]
@@ -77,6 +89,7 @@ class Ghost(arcade.Sprite, ABC):
                     current_key)
             
             if next_cell:
+
                 used_cells.add(next_cell)
                 gx, gy = next_cell
                 if len(self.last_coordinates) > 2:
@@ -84,6 +97,18 @@ class Ghost(arcade.Sprite, ABC):
                 self.last_coordinates.append(self.coordinates)
                 self.coordinates = (gx, gy)
                 self.target_x, self.target_y = cell_positions[gy][gx]
+                if self.center_x == self.target_x:
+                    if self.center_y > self.target_y:
+                        self.direction = directions.DOWN
+                    else:
+                        self.direction = directions.UP
+                else:
+                    if self.center_x > self.target_x:
+                        self.direction = directions.LEFT
+                    else:
+                        self.direction = directions.RIGHT
+                self.normal_mode_texture = self.all_texture[self.direction]
+                self.texture = self.normal_mode_texture
         else:
             # Smoothly move the sprite towards the target position
             if self.center_x < self.target_x:
@@ -241,11 +266,9 @@ class Ghost(arcade.Sprite, ABC):
         return random.choice(list(valid.keys()))
 
 
-class BlueGhost(Ghost):
+class Inky(Ghost):
     def __init__(self, coordinates, maze,  cell_size):
         super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
-        self.normal_mode_texture = arcade.load_texture("src/assets/cyanghost.png")
-        self.texture = self.normal_mode_texture
 
         self.required_time = 3
 
@@ -265,11 +288,9 @@ class BlueGhost(Ghost):
         return self.bfs_to_next_move(used_cells, pacman_pos, last_key)
 
 
-class PinkGhost(Ghost):
+class Pinky(Ghost):
     def __init__(self, coordinates, maze,  cell_size):
         super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
-        self.normal_mode_texture = arcade.load_texture("src/assets/pinkghost.png")
-        self.texture = self.normal_mode_texture
         self.required_time = 0
 
     def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
@@ -284,11 +305,9 @@ class PinkGhost(Ghost):
         return self.random_next_move()
 
 
-class RedGhost(Ghost):
+class Blinky(Ghost):
     def __init__(self, coordinates, maze,  cell_size):
         super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
-        self.normal_mode_texture = arcade.load_texture("src/assets/redghost.png")
-        self.texture = self.normal_mode_texture
 
         self.required_time = 6
 
@@ -319,12 +338,10 @@ class RedGhost(Ghost):
         return self.bfs_to_next_move(used_cells, pacman_pos, last_key)
 
 
-class OrangeGhost(Ghost):
+class Clyde(Ghost):
     def __init__(self, coordinates, maze,  cell_size):
         super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
         self.required_time = 9
-        self.normal_mode_texture = arcade.load_texture("src/assets/orangeghost.png")
-        self.texture = self.normal_mode_texture
 
         self.min_distance = 6
 

@@ -57,6 +57,7 @@ class Ghost(arcade.Sprite, ABC):
         current_key = kwargs["current_key"]
         start_time = kwargs["start_time"]
         pac_man_grid = kwargs["pac_man_grid"]
+        edible = kwargs["edible"]
         if self.eatable:
             self.time_to_respawn += delta_time
             self.visible = False
@@ -107,8 +108,9 @@ class Ghost(arcade.Sprite, ABC):
                         self.direction = directions.LEFT
                     else:
                         self.direction = directions.RIGHT
-                self.normal_mode_texture = self.all_texture[self.direction]
-                self.texture = self.normal_mode_texture
+                if not edible:
+                    self.normal_mode_texture = self.all_texture[self.direction]
+                    self.texture = self.normal_mode_texture
         else:
             # Smoothly move the sprite towards the target position
             if self.center_x < self.target_x:

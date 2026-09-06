@@ -364,6 +364,7 @@ class Pacman(arcade.View):
             current_key=self.current_key,
             start_time=self.start_time,
             pac_man_grid=self.pac_man_grid,
+            edible = self.edible
             )
         
         for ghost in self.ghost_list:

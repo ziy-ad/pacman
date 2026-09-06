@@ -25,6 +25,13 @@ class Point:
         yield self.x
         yield self.y
 
+class CheatMode:
+    def __init__(self):
+        self.invincible = False
+        self.ghost_freeze = False
+        self.extra_lives = 0
+        self.level_skip = False
+
 
 class Pacman(arcade.View):
     def __init__(self, parser: ConfigData):
@@ -47,6 +54,7 @@ class Pacman(arcade.View):
         # pac man settings
         self.pac_man_frames = self.load_pacman_frames() 
         self.pac_man_seconds = 0
+        self.cheater = CheatMode()
         self.pac_man_next = 1
         self.pac_man_frame_index = 0
         self.pac_man_possition = self.init_pacman_possition()
@@ -139,7 +147,10 @@ class Pacman(arcade.View):
 
 
     def init_pacman_possition(self):
-        x, y = self.cell_positions[len(self.cell_positions) // 2][len(self.cell_positions) // 2]
+        # Use separate midpoints for rows and columns (handles non-square mazes)
+        mid_row = len(self.cell_positions) // 2
+        mid_col = len(self.cell_positions[0]) // 2
+        x, y = self.cell_positions[mid_row][mid_col]
         self.current_index = Point(x, y)
         return Point(x, y)
 
@@ -299,7 +310,7 @@ class Pacman(arcade.View):
                     ghost.eatable = True
                     self.score += self.parser.points_per_ghost
                 else:
-                    if not ghost.eatable:
+                    if not ghost.eatable and not self.cheater.invincible:
                         self.catch_freeze_time = 0.0
                         self.caught_by_ghost = True
                         break
@@ -347,6 +358,8 @@ class Pacman(arcade.View):
             if len(self.visited_cells) + len(self.forbiden_cells) == len(self.points_cord):
                 if self.current_level + 1 < len(self.parser.levels):
                     self.current_level += 1
+                    self.start_time = time.time()
+                    self.pause_start = None
                     self.maze_init()
                 else:
                     from .main_menu import GameOverView
@@ -374,3 +387,4 @@ class Pacman(arcade.View):
             self.next_key = directions.DOWN            
         elif symbol == arcade.key.UP or symbol == arcade.key.W:
             self.next_key = directions.UP
+ 

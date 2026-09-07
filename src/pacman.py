@@ -135,7 +135,7 @@ class Pacman(arcade.View):
         self.speed = 0.05
         self.current_level = 0
         self.inv_start_time = 0.0
-        self.inv_freeze_time = 5.0
+        self.inv_freeze_time = 4.0
         self.scoreboard.load_scores()
         self.ghost_list: arcade.SpriteList[Ghost] = arcade.SpriteList()
         # spawn the ghosts in the corners of the maze
@@ -163,6 +163,8 @@ class Pacman(arcade.View):
         self.pac_man_grid = (len(self.maze.maze[0]) // 2, len(self.maze.maze) // 2)
         self.set_ghosts()
         self.reset(death=True)
+        self.inv_start_time = 0.0
+        self.cheater.invincible = False
         self.start_time = time.time()
 
 
@@ -353,7 +355,8 @@ class Pacman(arcade.View):
                 self.edible_duration = 0.0
                 self.edible_time = 0.0
     def on_update(self, delta_time):
-        self.timer -= delta_time
+        if self.start_time:
+            self.timer = self.parser.level_max_time - (time.time() - self.start_time)
         if self.cheater.level_skip:
             self.cheater.level_skip = False
             if self.current_level + 1 < len(self.parser.levels):
@@ -367,6 +370,10 @@ class Pacman(arcade.View):
         self.update_pacman_animation(delta_time)
         self.update_pac_gum_count()
         self.handle_edible(delta_time)
+        if self.cheater.invincible and self.inv_start_time > 0.0:
+            if (time.time() - self.inv_start_time) >= self.inv_freeze_time:
+                self.inv_start_time = 0.0
+                self.cheater.invincible = False
         if self.start_time:
             if time.time() - self.start_time >= self.parser.level_max_time:
                 from .main_menu import GameOverView
@@ -375,19 +382,21 @@ class Pacman(arcade.View):
 
         if self.caught_by_ghost:
             self.timer += delta_time
-            self.inv_start_time += delta_time
-            self.cheater.invincible = True
-            if (time.time() - self.inv_start_time) >= self.inv_freeze_time:
-                self.inv_start_time = 0.0
-                self.cheater.invincible = False
+
             if self.catch_freeze_time <= 0.0:
                 self.lives -= 1
                 self.live_textures[self.lives] = self.dead_pac_man
+
             self.catch_freeze_time += delta_time
             if self.catch_freeze_time >= self.catch_freeze_duration:
                 self.catch_freeze_time = 0.0
                 self.reset(death=self.lives > 0)
-                if not self.lives > 0:
+                if self.lives > 0:
+                    self.inv_start_time = time.time()
+                    self.cheater.invincible = True
+                else:
+                    self.cheater.invincible = False
+                    self.inv_start_time = 0.0
                     self.lives = self.parser.lives
                     from .main_menu import GameOverView
                     # pass scoreboard and final score, plus this pacman instance

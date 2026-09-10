@@ -31,6 +31,7 @@ class CheatMode:
         self.ghost_freeze = False
         self.extra_lives = 0
         self.level_skip = False
+        self.show_ghost_path = False
 
 
 class Pacman(arcade.View):
@@ -299,8 +300,14 @@ class Pacman(arcade.View):
                 start_x, start_y = start
                 nx , ny = cell
                 end_x, end_y = self.cell_positions[ny][nx]
-
-                arcade.draw_line(start_x, start_y, end_x, end_y, colors[ghost.__class__], 5)
+                arcade.draw_line(start_x, start_y, end_x, end_y, colors[ghost.__class__], 6)
+                if idx == len(ghost.path) - 1:
+                    cx = end_x - 8
+                    ex = end_x + 8
+                    cy = end_y - 8
+                    ey = end_y + 8
+                    arcade.draw_line(cx, cy, ex, ey, colors[ghost.__class__], 4)
+                    arcade.draw_line(ex, cy, cx, ey, colors[ghost.__class__], 4)
                 start = (end_x, end_y)
     def make_move(self):
         MOVE_VECTORS = {
@@ -506,7 +513,8 @@ class Pacman(arcade.View):
         self.draw_lives()
         with self.camera.activate():
             self.draw_map()
-            self.draw_ghosts_path()
+            if self.cheater.show_ghost_path:
+                self.draw_ghosts_path()
             px, py = self.pac_man_possition
             pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
             arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)

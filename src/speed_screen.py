@@ -16,6 +16,7 @@ class CheatModeView(arcade.View):
             "Level Skip",
             "Ghost Freeze",
             "Extra Lives",
+            "Show Ghosts Path",
             "Back",
         ]
         self.selected = 0
@@ -80,6 +81,9 @@ class CheatModeView(arcade.View):
             elif label == "Ghost Freeze":
                 value = self.pause_menu.game_view.cheater.ghost_freeze
                 self.pause_menu.game_view.cheater.ghost_freeze = self.boolean_map[value]
+            elif label == "Show Ghosts Path":
+                value = self.pause_menu.game_view.cheater.show_ghost_path
+                self.pause_menu.game_view.cheater.show_ghost_path = self.boolean_map[value]
             elif label == "Level Skip":
                 value = self.pause_menu.game_view.cheater.level_skip
                 self.pause_menu.game_view.cheater.level_skip = self.boolean_map[value]

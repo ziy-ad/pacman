@@ -46,8 +46,3 @@ class A(Enum):
 for x in A:
     print(type(x.name))
 
-
-x= (1 , 3)
-y= (2 , 3)
-
-print(tuple(x  + y for x, y in zip(x, y)))

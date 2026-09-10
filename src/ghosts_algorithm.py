@@ -149,7 +149,6 @@ class Ghost(arcade.Sprite, ABC):
 
         queue = [self.coordinates]
         visited = {self.coordinates: None}
-
         while queue:
             cx, cy = queue.pop(0)
             for move in moves:
@@ -168,6 +167,7 @@ class Ghost(arcade.Sprite, ABC):
 
                 visited[(nx, ny)] = (cx, cy)
 
+                    
                 if (nx, ny) == pacman_pos:
                     step = (nx, ny)
                     while visited[step] != self.coordinates:
@@ -294,8 +294,8 @@ class Inky(Ghost):
             return self.coordinates
 
 
-        if pacman_pos in used_cells:
-            return self.random_next_move()
+        # if pacman_pos in used_cells:
+        #     return self.random_next_move()
         match last_key:
             case directions.UP:
                 target = (0, -2)
@@ -305,7 +305,20 @@ class Inky(Ghost):
                 target = (-2, 0)
             case directions.RIGHT:
                 target = (2, 0)
-        target = tuple(t + p for p, t in zip(pacman_pos, target) )
+        target = list(t + p for p, t in zip(pacman_pos, target) )
+        while target[0] < 0:
+            target[0] += 1
+        while target[0] > len(self.maze[0]) - 1:
+            target[0] -= 1
+        while target[1] < 0:
+            target[1] += 1
+        while target[1] > len(self.maze) - 1:
+            target[1] -= 1
+        x = target[0] * 2 - self.blinky.coordinates[0]
+        y = target[1] * 2 - self.blinky.coordinates[1]
+        x = max(min(len(self.maze[0]) - 1, x), 0)  
+        y = max(min(len(self.maze) - 1, y), 0)
+        target = (x, y)
         return self.bfs_to_next_move(used_cells, target, last_key)
 
 
@@ -340,8 +353,8 @@ class Blinky(Ghost):
         if self.coordinates == pacman_pos:
             return self.coordinates
 
-        if pacman_pos in used_cells:
-            return self.random_next_move()
+        # if pacman_pos in used_cells:
+        #     return self.random_next_move()
 
         rows, cols = len(self.maze), len(self.maze[0])
 
@@ -375,8 +388,8 @@ class Clyde(Ghost):
             return self.coordinates
 
 
-        if pacman_pos in used_cells:
-            return self.random_next_move()
+        # if pacman_pos in used_cells:
+        #     return self.random_next_move()
 
         gx, gy = self.coordinates
         px, py = pacman_pos

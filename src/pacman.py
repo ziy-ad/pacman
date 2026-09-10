@@ -180,10 +180,18 @@ class Pacman(arcade.View):
                     (0, len(self.maze.maze) - 1),
                     (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
                 ]
+        blinky = None
         self.ghost_list.clear()
         for position, name in zip(self.corner_grid_coords, self.ghost_name):
             ghost_class = globals()[name]
-            ghost = ghost_class(position, self.maze.maze, self.cell_size)
+            if name != "Inky":
+                ghost = ghost_class(position, self.maze.maze, self.cell_size)
+                if name == "Blinky":
+                    blinky = ghost
+            else:
+                if blinky:
+                    ghost = ghost_class(position, self.maze.maze, self.cell_size, blinky)
+
             gx, gy = position
             ghost.center_x, ghost.center_y = self.cell_positions[gy][gx]
             ghost.target_x, ghost.target_y = self.cell_positions[gy][gx]
@@ -281,7 +289,19 @@ class Pacman(arcade.View):
         if self.current_key == directions_oposit[self.next_key]:
             self.current_key = self.next_key
         return result
+    def draw_ghosts_path(self):
+        colors = {Inky: arcade.color.SKY_BLUE, Blinky: arcade.color.RED, Clyde: arcade.color.ORANGE, Pinky: arcade.color.PINK}
+        for ghost in self.ghost_list:
+            start = ghost.center_x, ghost.center_y
+            if not ghost.path:
+                continue
+            for idx, cell in enumerate(ghost.path):
+                start_x, start_y = start
+                nx , ny = cell
+                end_x, end_y = self.cell_positions[ny][nx]
 
+                arcade.draw_line(start_x, start_y, end_x, end_y, colors[ghost.__class__], 5)
+                start = (end_x, end_y)
     def make_move(self):
         MOVE_VECTORS = {
             directions.UP:(0,1),
@@ -409,7 +429,7 @@ class Pacman(arcade.View):
         if self.can_move():
             self.make_move()
 
-        px, py = self.pac_man_possition.x, self.pac_man_possition.y
+        px, py = self.pac_man_possition
         grid_lookup = self.points_cord.get((px, py))
         if grid_lookup is not None:
             self.pac_man_grid = grid_lookup
@@ -486,6 +506,7 @@ class Pacman(arcade.View):
         self.draw_lives()
         with self.camera.activate():
             self.draw_map()
+            self.draw_ghosts_path()
             px, py = self.pac_man_possition
             pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
             arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)

@@ -144,5 +144,6 @@ class speed_view(arcade.View):
         if symbol == arcade.key.DOWN:
             self.pac_man_position.x = self.start_x
             self.pause_menu.game_view.speed -= 0.01
+            self.pause_menu.game_view.ghost_speed -= 0.01
         if symbol == arcade.key.RETURN or symbol == arcade.key.ESCAPE:
             self.window.show_view(CheatModeView(self.pause_menu))

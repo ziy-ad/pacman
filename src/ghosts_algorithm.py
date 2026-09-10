@@ -43,6 +43,7 @@ class Ghost(arcade.Sprite, ABC):
         self.load_textures()
         self.normal_mode_texture = self.all_texture[self.direction]
         self.texture = self.normal_mode_texture
+        self.path = []
     def load_textures(self):
         assets_path = Path(__file__).resolve().parent / "assets" / "ghosts"
         for dir in directions:
@@ -82,7 +83,7 @@ class Ghost(arcade.Sprite, ABC):
             # Snap to exact target to prevent floating point drift
             self.center_x = self.target_x
             self.center_y = self.target_y
-
+            self.path.clear()
             # Ask AI for the next grid cell to move to
             # position = self.cell_positions[self.pac_man_possition.y][self.pac_man_possition.x]
             if self.mode == Ghost_modes.Fight_mode:
@@ -170,11 +171,13 @@ class Ghost(arcade.Sprite, ABC):
                 if (nx, ny) == pacman_pos:
                     step = (nx, ny)
                     while visited[step] != self.coordinates:
+                        self.path += [step]
                         step = visited[step]
+                    self.path += [step]
+                    self.path = self.path[::-1]
                     return step
 
                 queue.append((nx, ny))
-
         gx, gy = self.coordinates
         fallback = []
         for move in moves:
@@ -274,13 +277,16 @@ class Ghost(arcade.Sprite, ABC):
 
 
 class Inky(Ghost):
-    def __init__(self, coordinates, maze,  cell_size):
+    def __init__(self, coordinates, maze,  cell_size, blinky: Ghost):
         super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
-
+        self.blinky = blinky
         self.required_time = 3
 
-    def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
+    def get_path(self, start_time, used_cells, pacman_pos, last_key: directions=None):
         current = time.time()
+        if not pacman_pos:
+            print("test")
+            exit()
         if (current - start_time) < self.required_time:
             return self.coordinates
 
@@ -290,9 +296,17 @@ class Inky(Ghost):
 
         if pacman_pos in used_cells:
             return self.random_next_move()
-
-        
-        return self.bfs_to_next_move(used_cells, pacman_pos, last_key)
+        match last_key:
+            case directions.UP:
+                target = (0, -2)
+            case directions.DOWN:
+                target = (0, 2)
+            case directions.LEFT:
+                target = (-2, 0)
+            case directions.RIGHT:
+                target = (2, 0)
+        target = tuple(t + p for p, t in zip(pacman_pos, target) )
+        return self.bfs_to_next_move(used_cells, target, last_key)
 
 
 class Pinky(Ghost):
@@ -372,7 +386,7 @@ class Clyde(Ghost):
             target = self.get_position_infront(self.maze, pacman_pos, last_key, self.min_distance)
             return self.bfs_to_next_move(used_cells,  target, last_key)
 
-        return self.bfs_to_next_move(used_cells, pacman_pos, last_key)
+        return self.bfs_to_next_move(used_cells, self.init_coord, last_key)
         
     def get_position_infront(self, maze_grid, start_pos, direction, max_steps):
         """Look up to max_steps ahead in the given direction, stopping at walls."""

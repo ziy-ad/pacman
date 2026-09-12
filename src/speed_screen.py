@@ -99,36 +99,58 @@ class CheatModeView(arcade.View):
 class speed_view(arcade.View):
     def __init__(self, pause_menu: "MainMenu") -> None:
         super().__init__( background_color=arcade.color.BLACK)
-        self.start_x = int((self.width // 2) - 200 )
+        self.start_x = int((self.width // 2) - 400 )
         self.cy = self.height // 2
         self.pause_menu = pause_menu
-        self.end_x = int(self.start_x + 400)
+        self.end_x = int(self.start_x + 900)
         self.pac_man_position = Point(self.start_x, self.cy)
         self.pac_man_frames = self.load_pacman_frames()
         self.pac_man_seconds = 0
         self.pac_man_next = 1
         self.pac_man_frame_index = 0
         self.pac_man = self.pac_man_frames[self.pac_man_frame_index]
-
+        self.pac_man_speed_text = arcade.Text(
+            "LEVEL",
+            self.width // 2,
+            self.height - 200,
+            arcade.color.WHITE,
+            font_size=38,
+            anchor_x="center",
+            font_name="VT323")
     def load_pacman_frames(self):
         return  [
             arcade.load_texture("src/assets/pacman_closed.png"),
             arcade.load_texture("src/assets/pacman_half.png"),
             arcade.load_texture("src/assets/pacman_open.png"),
         ]
+    def draw_background(self):
+        cell_size = self.pause_menu.game_view.cell_size
+        start = 0
+        for x in range(0, int(self.width * 3), 40):
+            arcade.draw_line(x, 0, x - start , self.height, arcade.color.WHITE, 3)
+            start = x // 2
     def on_draw(self):
         self.clear()
         lines = []
-        for x in range(self.start_x,self.end_x, 30):
-            lines += [(x + 20, self.cy) ]
-        arcade.draw_lines(lines, color=arcade.color.RED, line_width=5)
+        # self.draw_background()
+        cell_size = self.pause_menu.game_view.cell_size
+        v = self.start_x
+        for x in range(6):
+            arcade.draw_rect_filled(arcade.rect.XYWH(v, self.cy, cell_size, cell_size), arcade.color.BLACK)
+            v += cell_size
+        arcade.draw_line(self.start_x - 25, self.cy + (cell_size // 2), self.start_x - 25,self.cy - (cell_size // 2) , arcade.color.BLUE, 5 )
+        arcade.draw_line(self.end_x + 25, self.cy + (cell_size // 2), self.end_x + 25,self.cy - (cell_size // 2) , arcade.color.BLUE, 5 )
+        arcade.draw_line(self.start_x - 25, self.cy + (cell_size // 2), self.end_x + 25, self.cy + (cell_size // 2), arcade.color.BLUE, 5)
+        arcade.draw_line(self.start_x - 25, self.cy - (cell_size // 2), self.end_x + 25, self.cy - (cell_size // 2), arcade.color.BLUE, 5)
+        self.pac_man_speed_text.text = f"Speed: {round(self.pause_menu.game_view.speed * 100)} %"
+        self.pac_man_speed_text.draw()
         arcade.draw_texture_rect(
             self.pac_man_frames[self.pac_man_frame_index],
             arcade.XYWH(
                     self.pac_man_position.x ,
                     self.pac_man_position.y,
-                    40,
-                    40)
+                    cell_size * 0.7,
+                    cell_size * 0.7)
             )
 
     def on_update(self, delta_time):
@@ -143,11 +165,14 @@ class speed_view(arcade.View):
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.UP:
-            self.pac_man_position.x = self.start_x
-            self.pause_menu.game_view.speed += 0.01
+            if self.pause_menu.game_view.speed < 1.0:
+                self.pac_man_position.x = self.start_x
+                speed = self.pause_menu.game_view.speed + 0.01
+                self.pause_menu.game_view.speed = round(speed, 2)
         if symbol == arcade.key.DOWN:
-            self.pac_man_position.x = self.start_x
-            self.pause_menu.game_view.speed -= 0.01
-            self.pause_menu.game_view.ghost_speed -= 0.01
+            if self.pause_menu.game_view.speed > 0.02:
+                self.pac_man_position.x = self.start_x
+                speed = self.pause_menu.game_view.speed - 0.01
+                self.pause_menu.game_view.speed = round(speed, 2)
         if symbol == arcade.key.RETURN or symbol == arcade.key.ESCAPE:
             self.window.show_view(CheatModeView(self.pause_menu))

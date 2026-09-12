@@ -31,7 +31,7 @@ class CheatMode:
         self.ghost_freeze = False
         self.extra_lives = 0
         self.level_skip = False
-        self.show_ghost_path = False
+        self.show_ghost_path = True
 
 
 class Pacman(arcade.View):
@@ -62,6 +62,8 @@ class Pacman(arcade.View):
             self.live_textures += [self.live_pac_man]
         arcade.load_font(str(self.assets_path / "Silkscreen-Regular.ttf"))
         arcade.load_font(str(self.assets_path / "Silkscreen-Bold.ttf"))
+        arcade.load_font(str(self.assets_path / "VT323-Regular.ttf"))
+        
 
         self.label_level = arcade.Text(
             "LEVEL",

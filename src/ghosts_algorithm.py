@@ -194,7 +194,9 @@ class Ghost(arcade.Sprite, ABC):
 
         if fallback:
             filtered = [cell for cell in fallback if cell not in recent_coordinates]
-            return random.choice(filtered if filtered else fallback)
+            th = random.choice(filtered if filtered else fallback)
+            self.path += [th]
+            return th
 
         return self.coordinates
 
@@ -292,7 +294,6 @@ class Inky(Ghost):
 
         if pacman_pos == self.coordinates:
             return self.coordinates
-
 
         # if pacman_pos in used_cells:
         #     return self.random_next_move()

@@ -25,7 +25,11 @@ class ParseConfig:
     def __init__(self):
         """class attributes where the config_file data should be stored"""
         self.path = ParseConfig.get_path()
-        self.loaded_json = self.validate_file()
+        try:
+            self.loaded_json = self.validate_file()
+        except Exception as e:
+            print(f"Error loading config file: {e}")
+            exit(1)
         self.valid_data = ConfigData(**self.validate_data())
 
     @staticmethod
@@ -179,6 +183,11 @@ class ParseConfig:
                     print(
                         "Reciving empty file name using 'track_score.json' as default"
                     )
+                elif len(file_name.split('.')) != 2 or not file_name.endswith(".json"):
+                    print(
+                        "file name should be a string with .json extension", end=" "
+                    )
+                    print("using 'track_score.json' as default")
                 elif ".." in file_name or Path(file_name).is_absolute():
                     print("It could be risk to use a file another path", end=" ")
                     print("using 'track_score.json' as default")
@@ -187,7 +196,18 @@ class ParseConfig:
             else:
                 print("file name should be string")
                 print("using 'track_score.json' as default")
-
+        try:
+            with open(validated_data["highscore_filename"], "r") as f:
+                son = json.load(f)
+                if not isinstance(son, list):
+                    raise ValueError()
+        except Exception:
+            try:
+                with open(validated_data["highscore_filename"], "w") as f:
+                    json.dump([], f, indent=4)
+            except Exception as e:
+                print(f"could not create {validated_data['highscore_filename']}: {e}")
+                exit(1)
         for key in int_keys:
             if key in self.loaded_json.keys():
                 value = self.loaded_json.get(key)

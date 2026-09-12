@@ -127,7 +127,7 @@ class Pacman(arcade.View):
         self.caught_by_ghost = False
         self.catch_freeze_time = 0.0
         self.catch_freeze_duration = 2.2
-        self.score_path = Path(__file__).resolve().parent.parent / "highscore.json"
+        self.score_path = Path(__file__).resolve().parent.parent / self.parser.highscore_filename
         self.scoreboard = score_board(str(self.score_path))
         self.score = 0
         self.edible = False
@@ -428,7 +428,6 @@ class Pacman(arcade.View):
                     from .main_menu import GameOverView
                     # pass scoreboard and final score, plus this pacman instance
                     self.start_time = None
-                    self.score = 0
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
             return
 

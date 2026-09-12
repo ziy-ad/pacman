@@ -1,8 +1,8 @@
 {
 
-    "highscore_filename": "test",
+    "highscore_filename": "test.json",
 
-    "lives": 2,
+    "lives": 1,
 
     "pacgum": 42,
     "points_per_pacgum": 10,

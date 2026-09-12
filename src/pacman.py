@@ -151,7 +151,10 @@ class Pacman(arcade.View):
         self.set_ghosts()
 
     def maze_init(self):
-        random_seed = random.randint(0, 1000000)
+        if self.current_level == 0:
+            random_seed = self.parser.seed
+        else:
+            random_seed = random.randint(0, 1000000)
         self.maze = MazeGenerator(seed=random_seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
         self.maze.generate(seed=random_seed)
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
@@ -166,7 +169,7 @@ class Pacman(arcade.View):
         self.reset(death=True)
         self.inv_start_time = 0.0
         self.cheater.invincible = False
-        self.start_time = time.time()
+        # self.start_time = time.time()
 
 
     def set_main_menu(self, main_menu):
@@ -428,6 +431,13 @@ class Pacman(arcade.View):
                     from .main_menu import GameOverView
                     # pass scoreboard and final score, plus this pacman instance
                     self.start_time = None
+                    self.lives = self.parser.lives
+                    self.current_level = 0
+                    self.score = 0
+                    self.scoreboard.load_scores()
+                    self.pause()
+                    self.maze_init()
+                    print(self.lives)
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
             return
 

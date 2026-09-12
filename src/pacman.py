@@ -26,12 +26,11 @@ class Point:
         yield self.y
 
 class CheatMode:
-    def __init__(self):
-        self.invincible = False
-        self.ghost_freeze = False
-        self.extra_lives = 0
-        self.level_skip = False
-        self.show_ghost_path = False
+    def __init__(self, default_val=False):
+        self.invincible = default_val
+        self.ghost_freeze = default_val
+        self.level_skip = default_val
+        self.show_ghost_path = default_val
 
 
 class Pacman(arcade.View):
@@ -134,7 +133,7 @@ class Pacman(arcade.View):
         self.edible_duration = 0.0
         self.edible_time = 0.0
         self.speed = 0.05
-        self.current_level = 0
+        self.current_level = 8
         self.inv_start_time = 0.0
         self.inv_freeze_time = 4.0
         self.scoreboard.load_scores()
@@ -149,6 +148,7 @@ class Pacman(arcade.View):
         self.ghost_name = ["Pinky", "Blinky", "Clyde", "Inky"]
         self.ghost_speed = self.speed
         self.set_ghosts()
+        self.start_time = None
 
     def maze_init(self):
         if self.current_level == 0:
@@ -169,14 +169,12 @@ class Pacman(arcade.View):
         self.reset(death=True)
         self.inv_start_time = 0.0
         self.cheater.invincible = False
-        # self.start_time = time.time()
 
 
     def set_main_menu(self, main_menu):
         self.main_menu = main_menu
 
     def set_ghosts(self):
-        self.start_time = None
         self.pause_start = None
         self.corner_grid_coords = [
                     (0, 0),
@@ -353,7 +351,11 @@ class Pacman(arcade.View):
                 self.ghost_speed = self.ghost_speed * 0.8
                 self.edible_time += 5
             else:
-                self.score += self.parser.points_per_pacgum
+                center_x = len(self.cell_positions) // 2
+                center_y = len(self.cell_positions[0]) // 2
+                mid = self.cell_positions[center_x][center_y]
+                if (px, py) != mid:
+                    self.score += self.parser.points_per_pacgum
     def is_touching_ghost(self, ghost: Ghost):
         catch_distance = self.cell_size * 0.4
         px, py = self.pac_man_possition
@@ -387,16 +389,6 @@ class Pacman(arcade.View):
     def on_update(self, delta_time):
         if self.start_time:
             self.timer = self.parser.level_max_time - (time.time() - self.start_time)
-        if self.cheater.level_skip:
-            self.cheater.level_skip = False
-            if self.current_level + 1 < len(self.parser.levels):
-                self.current_level += 1
-                self.start_time = None
-                self.maze_init()
-            else:
-                from .main_menu import GameOverView
-                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
-            return
         self.update_pacman_animation(delta_time)
         self.update_pac_gum_count()
         self.handle_edible(delta_time)
@@ -406,8 +398,17 @@ class Pacman(arcade.View):
                 self.cheater.invincible = False
         if self.start_time:
             if time.time() - self.start_time >= self.parser.level_max_time:
+                self.start_time = None
+                self.pause()
+                self.lives = self.parser.lives
+                self.current_level = 0
+                self.score = 0
+                self.scoreboard.load_scores()
+                self.pause()
+                self.maze_init()
                 from .main_menu import GameOverView
                 self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                return
 
 
         if self.caught_by_ghost:
@@ -427,7 +428,6 @@ class Pacman(arcade.View):
                 else:
                     self.cheater.invincible = False
                     self.inv_start_time = 0.0
-                    self.lives = self.parser.lives
                     from .main_menu import GameOverView
                     # pass scoreboard and final score, plus this pacman instance
                     self.start_time = None
@@ -437,7 +437,6 @@ class Pacman(arcade.View):
                     self.scoreboard.load_scores()
                     self.pause()
                     self.maze_init()
-                    print(self.lives)
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
             return
 
@@ -485,6 +484,11 @@ class Pacman(arcade.View):
             arcade.draw_texture_rect(texture, rect)
             start_x += 35
     def draw_map(self):
+        center_x = len(self.cell_positions) // 2
+        center_y = len(self.cell_positions[0]) // 2
+        mid = self.cell_positions[center_x][center_y]
+
+        self.visited_cells.add(mid)
         for idy, row in enumerate(self.cell_positions):
             for idx, cell in enumerate(row):
                 x, y = cell
@@ -527,14 +531,23 @@ class Pacman(arcade.View):
             px, py = self.pac_man_possition
             pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
             arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)
-            
-            if len(self.visited_cells) + len(self.forbiden_cells) == len(self.points_cord):
+
+            target_visited_cells = len(self.maze.maze) * len(self.maze.maze[0]) - len(self.forbiden_cells)
+            if len(self.visited_cells) >= target_visited_cells or self.cheater.level_skip:
+                self.cheater.level_skip = False
                 if self.current_level + 1 < len(self.parser.levels):
                     self.current_level += 1
                     self.start_time = time.time()
                     self.pause_start = None
                     self.maze_init()
                 else:
+                    self.start_time = None
+                    self.lives = self.parser.lives
+                    self.current_level = 0
+                    self.score = 0
+                    self.scoreboard.load_scores()
+                    self.pause()
+                    self.maze_init()
                     from .main_menu import GameOverView
                     # pass scoreboard and final score, plus this pacman instance
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))

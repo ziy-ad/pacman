@@ -223,9 +223,12 @@ class Ghost(arcade.Sprite, ABC):
                 filtred_options.append(option)
 
         if not filtred_options:
-            return random.choice(options)
-        
-        return random.choice(filtred_options)
+            th =  random.choice(options)
+            self.path += [th]
+            return th
+        th = random.choice(filtred_options)
+        self.path += [th]
+        return th
 
     def run_away(self, pacman_pos):
         gx, gy = self.coordinates
@@ -331,9 +334,12 @@ class Pinky(Ghost):
     def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
         current = time.time()
         if (current - start_time) < self.required_time:
+            self.path += [self.coordinates]
             return self.coordinates
 
         if pacman_pos == self.coordinates:
+            self.path += [self.coordinates]
+
             return self.coordinates
 
 

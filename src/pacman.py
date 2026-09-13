@@ -137,7 +137,7 @@ class Pacman(arcade.View):
         self.edible_duration = 0.0
         self.edible_time = 0.0
         self.speed = 0.05
-        self.current_level = 0
+        self.current_level = 8
         self.inv_start_time = 0.0
         self.inv_freeze_time = 4.0
         self.scoreboard.load_scores()
@@ -496,10 +496,38 @@ class Pacman(arcade.View):
 
     def draw_lives(self):
         start_x = self.width // 2 + 300
-        for texture in self.live_textures:
-            rect = arcade.XYWH(start_x, self.height - 50, 30, 30)
-            arcade.draw_texture_rect(texture, rect)
-            start_x += 35
+        border_x = start_x
+        count = 0
+        offsit = 0
+        for idx, texture in enumerate(self.live_textures):
+            if idx < 5:
+                rect = arcade.XYWH(start_x, self.height - 50, 30, 30)
+                arcade.draw_texture_rect(texture, rect)
+                start_x += 30
+                if idx + 1 != self.lives:
+                    start_x += 5
+                count += 1
+            else:
+                if texture == self.live_pac_man:
+                    offsit += 1
+        r, g, b, _ = arcade.color.YELLOW
+        if offsit > 0:
+            arcade.Text(
+                f"+{self.lives - 5}",
+                start_x + 10,
+                self.height - 45,
+                (r,g,b, 150),
+                20,
+                font_name="Rowdies",
+                anchor_x="center",
+                anchor_y="center",
+                bold=True
+            ).draw()
+        border_x = (start_x - border_x) // 2 + border_x 
+        rect = arcade.XYWH(border_x - 15 ,self.height - 50 , 36 * count, 36)
+
+        arcade.draw_rect_outline(rect, (r,g,b, 100), 2)
+
     def draw_map(self):
         center_x = len(self.cell_positions) // 2
         center_y = len(self.cell_positions[0]) // 2

@@ -187,4 +187,7 @@ class ScoreboardView(arcade.View):
     def on_key_press(self, symbol, modifiers):
         if symbol in (arcade.key.RETURN, arcade.key.ENTER, arcade.key.ESCAPE):
             # Return to main menu; reuse pacman_view instance without resetting
+            self.pacman_view.reset()
+            self.pacman_view.set_pac_man_lives()
+            self.pacman_view.score = 0
             self.window.show_view(MainMenu(self.window, self.pacman_view))

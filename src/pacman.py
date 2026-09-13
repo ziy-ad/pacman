@@ -409,7 +409,6 @@ class Pacman(arcade.View):
                 self.score = 0
                 return
 
-
         if self.caught_by_ghost:
             self.timer += delta_time
 
@@ -439,6 +438,27 @@ class Pacman(arcade.View):
                     self.score = 0
             return
 
+
+        target_visited_cells = len(self.maze.maze) * len(self.maze.maze[0]) - len(self.forbiden_cells)
+        if len(self.visited_cells) >= target_visited_cells or self.cheater.level_skip:
+            self.cheater.level_skip = False
+            if self.current_level + 1 < len(self.parser.levels):
+                self.current_level += 1
+                self.start_time = time.time()
+                self.pause_start = None
+                self.maze_init()
+            else:
+                self.start_time = None
+                self.lives = self.parser.lives
+                self.current_level = 0
+                self.scoreboard.load_scores()
+                self.pause()
+                self.maze_init()
+                from .main_menu import GameOverView
+                # pass scoreboard and final score, plus this pacman instance
+                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                self.score = 0
+            return
 
         if self.can_move():
             self.make_move()
@@ -532,26 +552,6 @@ class Pacman(arcade.View):
         px, py = self.pac_man_possition
         pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
         arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)
-
-        target_visited_cells = len(self.maze.maze) * len(self.maze.maze[0]) - len(self.forbiden_cells)
-        if len(self.visited_cells) >= target_visited_cells or self.cheater.level_skip:
-            self.cheater.level_skip = False
-            if self.current_level + 1 < len(self.parser.levels):
-                self.current_level += 1
-                self.start_time = time.time()
-                self.pause_start = None
-                self.maze_init()
-            else:
-                self.start_time = None
-                self.lives = self.parser.lives
-                self.current_level = 0
-                self.scoreboard.load_scores()
-                self.pause()
-                self.maze_init()
-                from .main_menu import GameOverView
-                # pass scoreboard and final score, plus this pacman instance
-                self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
-                self.score = 0
 
         self.ghost_list.draw()
         if self.caught_by_ghost and self.lives <= 0:

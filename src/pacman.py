@@ -57,11 +57,13 @@ class Pacman(arcade.View):
         self.live_pac_man = arcade.load_texture(self.assets_path / "live_pacman.png")
         self.dead_pac_man = arcade.load_texture(self.assets_path / "dead_pacman.png")
         self.live_textures = []
-        for _ in range(self.lives):
-            self.live_textures += [self.live_pac_man]
+        self.set_pac_man_lives()
+            
         arcade.load_font(str(self.assets_path / "Silkscreen-Regular.ttf"))
         arcade.load_font(str(self.assets_path / "Silkscreen-Bold.ttf"))
         arcade.load_font(str(self.assets_path / "VT323-Regular.ttf"))
+        arcade.load_font(str(self.assets_path / "Rowdies-Regular.ttf"))
+        arcade.load_font(str(self.assets_path / "Rowdies-Bold.ttf"))
         
 
         self.label_level = arcade.Text(
@@ -151,7 +153,11 @@ class Pacman(arcade.View):
         self.ghost_speed = self.speed
         self.set_ghosts()
         self.start_time = None
-
+    def set_pac_man_lives(self):
+        self.live_textures.clear()
+        self.lives = self.parser.lives
+        for _ in range(self.lives):
+            self.live_textures += [self.live_pac_man]
     def maze_init(self):
         if self.current_level == 0:
             random_seed = self.parser.seed
@@ -172,7 +178,15 @@ class Pacman(arcade.View):
         self.inv_start_time = 0.0
         self.cheater.invincible = False
 
-
+    def sort_lives(self):
+        lives = []
+        deaths = []
+        for live in self.live_textures:
+            if live == self.live_pac_man:
+                lives += [live]
+            else:
+                deaths += [live]
+        self.live_textures = lives + deaths 
     def set_main_menu(self, main_menu):
         self.main_menu = main_menu
 
@@ -211,6 +225,7 @@ class Pacman(arcade.View):
             self.pause_start = None
         self.pac_man_possition = self.init_pacman_possition()
         self.caught_by_ghost = False
+        
 
     def pause(self):
         if self.start_time is not None and self.pause_start is None:

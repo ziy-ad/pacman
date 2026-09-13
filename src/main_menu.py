@@ -35,7 +35,7 @@ class MainMenu(arcade.View):
             rect = arcade.XYWH(cx, y, self.button_width, self.button_height)
             arcade.draw_rect_filled(rect, bg_color)
 
-            arcade.draw_text(
+            arcade.Text(
                     label,
                     cx, y,
                     text_color,
@@ -43,7 +43,7 @@ class MainMenu(arcade.View):
                     anchor_x="center",
                     anchor_y="center",
                     bold=i == self.selected,
-                )
+                ).draw()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.UP:
@@ -123,6 +123,7 @@ class GameOverView(arcade.View):
             self.input_name = self.input_name[:-1]
         elif symbol == arcade.key.ESCAPE:
             self.pacman_view.reset()
+            self.pacman_view.set_pac_man_lives()
             self.pacman_view.score = 0
             self.window.show_view(MainMenu(self.window, self.pacman_view))
 

@@ -401,12 +401,12 @@ class Pacman(arcade.View):
                 self.pause()
                 self.lives = self.parser.lives
                 self.current_level = 0
-                self.score = 0
                 self.scoreboard.load_scores()
                 self.pause()
                 self.maze_init()
                 from .main_menu import GameOverView
                 self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                self.score = 0
                 return
 
 
@@ -432,11 +432,11 @@ class Pacman(arcade.View):
                     self.start_time = None
                     self.lives = self.parser.lives
                     self.current_level = 0
-                    self.score = 0
                     self.scoreboard.load_scores()
                     self.pause()
                     self.maze_init()
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                    self.score = 0
             return
 
 
@@ -545,13 +545,13 @@ class Pacman(arcade.View):
                 self.start_time = None
                 self.lives = self.parser.lives
                 self.current_level = 0
-                self.score = 0
                 self.scoreboard.load_scores()
                 self.pause()
                 self.maze_init()
                 from .main_menu import GameOverView
                 # pass scoreboard and final score, plus this pacman instance
                 self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                self.score = 0
 
         self.ghost_list.draw()
         if self.caught_by_ghost and self.lives <= 0:

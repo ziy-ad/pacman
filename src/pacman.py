@@ -132,7 +132,7 @@ class Pacman(arcade.View):
         self.edible_duration = 0.0
         self.edible_time = 0.0
         self.speed = 0.05
-        self.current_level = 8
+        self.current_level = 0
         self.inv_start_time = 0.0
         self.inv_freeze_time = 4.0
         self.scoreboard.load_scores()
@@ -168,6 +168,15 @@ class Pacman(arcade.View):
         self.reset(death=True)
         self.inv_start_time = 0.0
         self.cheater.invincible = False
+
+    def setup_everything(self, with_score=False):
+        if with_score:
+            self.score = 0
+        self.current_level = 0
+        self.start_time = None
+        self.lives = self.parser.lives
+        self.maze_init()
+        self.scoreboard.load_scores()
 
 
     def set_main_menu(self, main_menu):
@@ -220,7 +229,6 @@ class Pacman(arcade.View):
 
 
     def init_pacman_possition(self):
-        # Use separate midpoints for rows and columns (handles non-square mazes)
         mid_row = len(self.cell_positions) // 2
         mid_col = len(self.cell_positions[0]) // 2
         x, y = self.cell_positions[mid_row][mid_col]
@@ -257,7 +265,6 @@ class Pacman(arcade.View):
         maze_pixel_w = num_cols * self.cell_size
         maze_pixel_h = num_rows * self.cell_size
 
-        # Top-left cell center, so the whole grid is centered on the window
         start_x = (self.width  - maze_pixel_w) // 2 + self.cell_size // 2
         start_y = (((self.height - 80) + maze_pixel_h) // 2 - self.cell_size // 2) 
 
@@ -397,13 +404,8 @@ class Pacman(arcade.View):
                 self.cheater.invincible = False
         if self.start_time:
             if time.time() - self.start_time >= self.parser.level_max_time:
-                self.start_time = None
                 self.pause()
-                self.lives = self.parser.lives
-                self.current_level = 0
-                self.scoreboard.load_scores()
-                self.pause()
-                self.maze_init()
+                self.setup_everything()
                 from .main_menu import GameOverView
                 self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
                 self.score = 0
@@ -426,14 +428,9 @@ class Pacman(arcade.View):
                 else:
                     self.cheater.invincible = False
                     self.inv_start_time = 0.0
-                    from .main_menu import GameOverView
-                    # pass scoreboard and final score, plus this pacman instance
-                    self.start_time = None
-                    self.lives = self.parser.lives
-                    self.current_level = 0
-                    self.scoreboard.load_scores()
+                    self.setup_everything()
                     self.pause()
-                    self.maze_init()
+                    from .main_menu import GameOverView
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
                     self.score = 0
             return
@@ -448,14 +445,8 @@ class Pacman(arcade.View):
                 self.pause_start = None
                 self.maze_init()
             else:
-                self.start_time = None
-                self.lives = self.parser.lives
-                self.current_level = 0
-                self.scoreboard.load_scores()
-                self.pause()
-                self.maze_init()
+                self.setup_everything()
                 from .main_menu import GameOverView
-                # pass scoreboard and final score, plus this pacman instance
                 self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
                 self.score = 0
             return
@@ -567,7 +558,7 @@ class Pacman(arcade.View):
             self.next_key = directions.RIGHT
         if symbol == arcade.key.ESCAPE:
             self.pause()
-            self.window.show_view(self.main_menu)
+            self.window.show_view(self.main_menu.pause_view)
         elif symbol == arcade.key.LEFT or symbol == arcade.key.A:
             self.next_key = directions.LEFT            
         elif symbol == arcade.key.DOWN or symbol == arcade.key.S:

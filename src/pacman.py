@@ -42,9 +42,6 @@ class Pacman(arcade.View):
         # maze config
         self.maze = MazeGenerator(seed=self.parser.seed, size=(self.parser.levels[0]["width"], self.parser.levels[0]["height"]))
         self.maze.generate(seed=self.parser.seed)
-        # camera settings
-        self.camera = arcade.Camera2D()
-        self.cx, self.cy = self.camera.position
         # cell settings
         self.cell_size = int(min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze)))
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
@@ -80,6 +77,16 @@ class Pacman(arcade.View):
             self.width // 2,
             self.height // 2,
             arcade.color.RED_BROWN,
+            font_size=100,
+            bold=True,
+            anchor_x="center",
+            font_name="Silkscreen")
+
+        self.game_win = arcade.Text(
+            "AH Ok! you won!",
+            self.width // 2,
+            self.height // 2,
+            arcade.color.YELLOW,
             font_size=100,
             bold=True,
             anchor_x="center",
@@ -133,13 +140,16 @@ class Pacman(arcade.View):
         self.score_path = Path(__file__).resolve().parent.parent / self.parser.highscore_filename
         self.scoreboard = score_board(str(self.score_path))
         self.score = 0
+        self.previous_score = 0
         self.edible = False
         self.edible_duration = 0.0
         self.edible_time = 0.0
         self.speed = 0.05
-        self.current_level = 8
+        self.current_level = 0
         self.inv_start_time = 0.0
         self.inv_freeze_time = 4.0
+        self.congrats_start_time = 0.0
+        self.congrats = False
         self.scoreboard.load_scores()
         self.ghost_list: arcade.SpriteList[Ghost] = arcade.SpriteList()
         # spawn the ghosts in the corners of the maze
@@ -187,6 +197,16 @@ class Pacman(arcade.View):
             else:
                 deaths += [live]
         self.live_textures = lives + deaths 
+
+    def setup_everything(self, with_score=False):
+        if with_score:
+            self.score = 0
+        self.current_level = 0
+        self.start_time = None
+        self.lives = self.parser.lives
+        self.maze_init()
+        self.scoreboard.load_scores()
+    
     def set_main_menu(self, main_menu):
         self.main_menu = main_menu
 
@@ -238,7 +258,6 @@ class Pacman(arcade.View):
 
 
     def init_pacman_possition(self):
-        # Use separate midpoints for rows and columns (handles non-square mazes)
         mid_row = len(self.cell_positions) // 2
         mid_col = len(self.cell_positions[0]) // 2
         x, y = self.cell_positions[mid_row][mid_col]
@@ -275,7 +294,6 @@ class Pacman(arcade.View):
         maze_pixel_w = num_cols * self.cell_size
         maze_pixel_h = num_rows * self.cell_size
 
-        # Top-left cell center, so the whole grid is centered on the window
         start_x = (self.width  - maze_pixel_w) // 2 + self.cell_size // 2
         start_y = (((self.height - 80) + maze_pixel_h) // 2 - self.cell_size // 2) 
 
@@ -415,18 +433,13 @@ class Pacman(arcade.View):
                 self.cheater.invincible = False
         if self.start_time:
             if time.time() - self.start_time >= self.parser.level_max_time:
-                self.start_time = None
                 self.pause()
-                self.lives = self.parser.lives
-                self.current_level = 0
-                self.score = 0
-                self.scoreboard.load_scores()
-                self.pause()
-                self.maze_init()
+                self.setup_everything()
                 from .main_menu import GameOverView
                 self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                self.previous_score = self.score
+                self.score = 0
                 return
-
 
         if self.caught_by_ghost:
             self.timer += delta_time
@@ -445,18 +458,39 @@ class Pacman(arcade.View):
                 else:
                     self.cheater.invincible = False
                     self.inv_start_time = 0.0
-                    from .main_menu import GameOverView
-                    # pass scoreboard and final score, plus this pacman instance
-                    self.start_time = None
-                    self.lives = self.parser.lives
-                    self.current_level = 0
-                    self.score = 0
-                    self.scoreboard.load_scores()
+                    self.setup_everything()
                     self.pause()
-                    self.maze_init()
+                    from .main_menu import GameOverView
                     self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                    self.previous_score = self.score
+                    self.score = 0
             return
 
+
+        target_visited_cells = len(self.maze.maze) * len(self.maze.maze[0]) - len(self.forbiden_cells)
+        if len(self.visited_cells) >= target_visited_cells or self.cheater.level_skip:
+            if self.current_level + 1 < len(self.parser.levels):
+                self.cheater.level_skip = False
+                self.current_level += 1
+                self.start_time = time.time()
+                self.pause_start = None
+                self.maze_init()
+            else:
+                self.congrats_start_time += delta_time
+                if not self.congrats:
+                    self.congrats = True
+                else:
+                    if self.congrats_start_time >= self.catch_freeze_duration:
+                        self.cheater.level_skip = False
+                        self.congrats = False
+                        self.congrats_start_time = 0.0
+                        self.setup_everything()
+
+                        from .main_menu import GameOverView
+                        self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
+                        self.previous_score = self.score
+                        self.score = 0
+            return
 
         if self.can_move():
             self.make_move()
@@ -543,7 +577,10 @@ class Pacman(arcade.View):
                 end_y = y + self.cell_size // 2
 
                 rect = arcade.rect.XYWH(x, y, self.cell_size, self.cell_size)
-                arcade.draw_rect_filled(rect, arcade.color.BLACK)
+                if (idx, idy) not in self.forbiden_cells:
+                    arcade.draw_rect_filled(rect, arcade.color.BLACK)
+                else:
+                    arcade.draw_rect_filled(rect, arcade.color.SKY_BLUE)
                 if self.maze.maze[idy][idx] & directions.UP:
                     arcade.draw_line(start_x, end_y, end_x, end_y , self.wall_color , line_width=5)
                 if self.maze.maze[idy][idx] & directions.RIGHT:
@@ -569,44 +606,22 @@ class Pacman(arcade.View):
         self.label_level.draw()
         self.level_text.draw()
         self.draw_lives()
-        with self.camera.activate():
-            self.draw_map()
-            if self.cheater.show_ghost_path:
-                self.draw_ghosts_path()
-            px, py = self.pac_man_possition
-            pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
-            arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)
+        self.draw_map()
+        if self.cheater.show_ghost_path:
+            self.draw_ghosts_path()
+        px, py = self.pac_man_possition
+        pac_man = arcade.XYWH(px , py, self.cell_size * 0.7, self.cell_size * 0.7)
+        arcade.draw_texture_rect(self.get_pac_man_frame(), pac_man)
 
-            target_visited_cells = len(self.maze.maze) * len(self.maze.maze[0]) - len(self.forbiden_cells)
-            if len(self.visited_cells) >= target_visited_cells or self.cheater.level_skip:
-                self.cheater.level_skip = False
-                if self.current_level + 1 < len(self.parser.levels):
-                    self.current_level += 1
-                    self.start_time = time.time()
-                    self.pause_start = None
-                    self.maze_init()
-                else:
-                    self.start_time = None
-                    self.lives = self.parser.lives
-                    self.current_level = 0
-                    self.score = 0
-                    self.scoreboard.load_scores()
-                    self.pause()
-                    self.maze_init()
-                    from .main_menu import GameOverView
-                    # pass scoreboard and final score, plus this pacman instance
-                    self.window.show_view(GameOverView(self.window, self.scoreboard, self.score, self))
-
-            self.ghost_list.draw()
-            if self.caught_by_ghost and self.lives <= 0:
-                r , g, b , _ = arcade.color.BLACK_LEATHER_JACKET
-                rect = arcade.rect.XYWH(self.width // 2, self.height // 2 , self.width * 2 , self.height * 2)
-                arcade.draw_rect_filled(rect, (r, g, b, 150))
+        self.ghost_list.draw()
+        if (self.caught_by_ghost and self.lives <= 0) or self.congrats:
+            r , g, b , _ = arcade.color.BLACK_LEATHER_JACKET
+            rect = arcade.rect.XYWH(self.width // 2, self.height // 2 , self.width * 2 , self.height * 2)
+            arcade.draw_rect_filled(rect, (r, g, b, 150))
+            if self.caught_by_ghost:
                 self.game_over.draw()
-    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        self.cx -= dx
-        self.cy -= dy
-        self.camera.position = (self.cx, self.cy)
+            elif self.congrats:
+                self.game_win.draw()
     
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.F:
@@ -615,7 +630,7 @@ class Pacman(arcade.View):
             self.next_key = directions.RIGHT
         if symbol == arcade.key.ESCAPE:
             self.pause()
-            self.window.show_view(self.main_menu)
+            self.window.show_view(self.main_menu.pause_view)
         elif symbol == arcade.key.LEFT or symbol == arcade.key.A:
             self.next_key = directions.LEFT            
         elif symbol == arcade.key.DOWN or symbol == arcade.key.S:

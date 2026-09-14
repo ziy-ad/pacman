@@ -6,10 +6,85 @@ import time
 from .speed_screen import CheatModeView, speed_view
 
 
-class MainMenu(arcade.View):
-    def __init__(self, window: arcade.Window, game_view: Pacman) -> None:
+class PauseMenu(arcade.View):
+    def __init__(self, window: arcade.Window, game_view: Pacman, main_view: MainMenu) -> None:
         super().__init__(window, background_color=arcade.color.BLACK)
         self.game_view = game_view
+        self.main_view = main_view
+        self.buttons = ["Resume","CheatMode", "Back"]
+        self.selected = 0
+        self.button_width = 250
+        self.button_height = 50
+        self.button_spacing = 20 
+        self.game_view.set_main_menu(self)
+        self.is_started = (self.game_view.start_time is not None)
+
+
+    def on_draw(self):
+        self.clear()
+        cx = self.width // 2
+        cy = self.height // 2
+
+        arcade.draw_texture_rect(
+                    self.main_view.background,
+                    arcade.LRBT(0, self.width, 0, self.height)
+                )
+        for i, label in enumerate(self.buttons):
+            y = cy - i * (self.button_height + self.button_spacing)
+            if i == self.selected:
+                bg_color = arcade.color.YELLOW
+                text_color = arcade.color.BLACK
+            else:
+                bg_color = arcade.color.DARK_SLATE_BLUE
+                text_color = arcade.color.WHITE
+            rect = arcade.XYWH(cx, y, self.button_width, self.button_height)
+            arcade.draw_rect_filled(rect, bg_color)
+
+            arcade.Text(
+                    label,
+                    cx, y,
+                    text_color,
+                    font_size=22,
+                    anchor_x="center",
+                    anchor_y="center",
+                    bold=i == self.selected,
+                ).draw()
+
+    def on_key_press(self, symbol, modifiers):
+        if symbol == arcade.key.UP:
+            self.selected = (self.selected - 1) % len(self.buttons)
+
+        elif symbol == arcade.key.DOWN:
+            self.selected = (self.selected + 1) % len(self.buttons)
+
+        elif symbol == arcade.key.RETURN:
+            label = self.buttons[self.selected]
+            if label == "Resume":
+                self.is_started = True
+                self.buttons[0] = "Resume"
+                if self.game_view.start_time is None:
+                    self.game_view.start_time = time.time()
+                self.game_view.resume()
+                self.window.show_view(self.game_view)
+            elif label == "CheatMode":
+                self.game_view.pause()
+                self.window.show_view(CheatModeView(self))
+            elif label == "Back":
+                self.main_view.is_started = False
+                self.main_view.buttons[0] = "Play"
+                self.game_view.setup_everything(with_score=True)
+                self.window.show_view(self.main_view)
+        elif symbol == arcade.key.ESCAPE and self.is_started and self.game_view.pause_start is not None:
+            self.game_view.resume()
+            self.window.show_view(self.game_view)
+
+
+class MainMenu(arcade.View):
+    def __init__(self, window: arcade.Window, game_view: Pacman) -> None:
+        super().__init__(window)
+        self.background = arcade.load_texture('src/assets/pacmanbackground.jpg')
+        self.game_view = game_view
+        self.pause_view = PauseMenu(window, game_view, self)
         self.is_started = (self.game_view.start_time is not None)
         self.buttons = ["Play", "Highscores", "CheatMode", "Quit"]
         if self.is_started:
@@ -21,6 +96,10 @@ class MainMenu(arcade.View):
         self.game_view.set_main_menu(self)
     def on_draw(self):
         self.clear()
+        arcade.draw_texture_rect(
+            self.background,
+            arcade.LRBT(0, self.width, 0, self.height)
+        )
         cx = self.width // 2
         cy = self.height // 2
 
@@ -97,14 +176,24 @@ class GameOverView(arcade.View):
         cx = self.width // 2
         cy = self.height // 2
 
-        arcade.draw_text(
+        arcade.Text(
             self.input_name + ("_" if int(time.time() * 2) % 2 == 0 else ""),
             cx,
             cy - 80,
             arcade.color.AERO_BLUE,
             font_size=28,
             anchor_x="center",
-        )
+        ).draw()
+
+        arcade.Text(
+                    f"Your score: {self.pacman_view.previous_score}",
+                    cx,
+                    cy,
+                    arcade.color.YELLOW,
+                    font_size=28,
+                    anchor_x="center",
+                ).draw()
+
 
     def on_key_press(self, symbol, modifiers):
         if symbol in (arcade.key.RETURN, arcade.key.ENTER):

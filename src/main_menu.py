@@ -3,7 +3,7 @@ from .pacman import Pacman
 from .score_tracker import score_board
 import re
 import time
-from .speed_screen import CheatModeView, speed_view
+from .speed_screen import CheatModeView
 
 
 class PauseMenu(arcade.View):
@@ -45,6 +45,7 @@ class PauseMenu(arcade.View):
                     cx, y,
                     text_color,
                     font_size=22,
+                    font_name="Rowdies",
                     anchor_x="center",
                     anchor_y="center",
                     bold=i == self.selected,
@@ -85,10 +86,7 @@ class MainMenu(arcade.View):
         self.background = arcade.load_texture('src/assets/pacmanbackground.jpg')
         self.game_view = game_view
         self.pause_view = PauseMenu(window, game_view, self)
-        self.is_started = (self.game_view.start_time is not None)
         self.buttons = ["Play", "Highscores", "CheatMode", "Quit"]
-        if self.is_started:
-            self.buttons[0] = "Resume"
         self.selected = 0
         self.button_width = 250
         self.button_height = 50
@@ -119,6 +117,7 @@ class MainMenu(arcade.View):
                     cx, y,
                     text_color,
                     font_size=22,
+                    font_name="Rowdies",
                     anchor_x="center",
                     anchor_y="center",
                     bold=i == self.selected,
@@ -133,9 +132,7 @@ class MainMenu(arcade.View):
 
         elif symbol == arcade.key.RETURN:
             label = self.buttons[self.selected]
-            if label == "Play" or label == "Resume":
-                self.is_started = True
-                self.buttons[0] = "Resume"
+            if label == "Play":
                 if self.game_view.start_time is None:
                     self.game_view.start_time = time.time()
                 self.game_view.resume()
@@ -148,10 +145,6 @@ class MainMenu(arcade.View):
                 self.window.show_view(ScoreboardView(self.window, self.game_view.scoreboard, self.game_view))
             elif label == "Quit":
                 arcade.exit()
-        elif symbol == arcade.key.ESCAPE and self.is_started and self.game_view.pause_start is not None:
-            self.game_view.resume()
-            self.window.show_view(self.game_view)
-
 
 
 class GameOverView(arcade.View):
@@ -235,43 +228,70 @@ class ScoreboardView(arcade.View):
         cx = self.width // 2
         cy = self.height // 2
 
-        arcade.draw_text(
+        arcade.Text(
             "Highscores",
             cx,
-            cy + 180,
-            arcade.color.WHITE,
-            font_size=36,
+            cy + 380,
+            arcade.color.YELLOW,
+            font_name="Silkscreen",
+            font_size=50,
+            bold=True,
             anchor_x="center",
-        )
+        ).draw()
 
         scores = self.scoreboard.get_all_scores()
         if not scores:
-            arcade.draw_text(
+            arcade.Text(
                 "No highscores yet",
                 cx,
                 cy + 120,
                 arcade.color.GRAY,
+                font_name="Rowdies",
                 font_size=20,
                 anchor_x="center",
-            )
+            ).draw()
         else:
             start_y = cy + 120
             line_h = 34
+            colors = {
+                1: (22, arcade.color.GOLD),
+                2: (20, arcade.color.SILVER_CHALICE),
+                3: (18, arcade.color.BRONZE)
+            }
             for i, entry in enumerate(scores):
                 y = start_y - i * line_h
                 name = entry.get("name", "")
                 score = entry.get("score", 0)
-                arcade.draw_text(f"{i+1:2}. {name}", cx - 120, y, arcade.color.WHITE, font_size=22)
-                arcade.draw_text(f"{score}", cx + 120, y, arcade.color.AERO_BLUE, font_size=22, anchor_x="right")
+                size, color = colors.get(
+                    i + 1,
+                    (15, arcade.color.WHITE))
+                arcade.Text(
+                    f"{i+1:2}. {name}",
+                    cx - 200,
+                    y,
+                    color,
+                    font_name="Rowdies",
+                    bold=True,
+                    font_size=size
+                ).draw()
+                arcade.Text(
+                    f"{score}",
+                    cx + 200,
+                    y,
+                    arcade.color.AERO_BLUE,
+                    font_name="Rowdies",
+                    font_size=size,
+                    anchor_x="right"
+                ).draw()
 
-        arcade.draw_text(
+        arcade.Text(
             "Press Enter or Escape to return to menu",
             cx,
             cy - 200,
             arcade.color.GRAY,
             font_size=14,
             anchor_x="center",
-        )
+        ).draw()
 
     def on_key_press(self, symbol, modifiers):
         if symbol in (arcade.key.RETURN, arcade.key.ENTER, arcade.key.ESCAPE):

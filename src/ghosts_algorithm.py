@@ -1,27 +1,10 @@
-from enum import IntFlag, Enum
 from abc import ABC, abstractmethod
 import random
 import time
 import arcade
 from pathlib import Path
 from collections import deque
-
-class directions(IntFlag):
-    UP = 1
-    RIGHT = 2
-    DOWN = 4
-    LEFT = 8
-
-
-class moves(Enum):
-    UP = (directions.UP,    0, -1)
-    RIGHT = (directions.RIGHT, 1,  0)
-    DOWN = (directions.DOWN,  0,  1)
-    LEFT = (directions.LEFT, -1,  0)
-class Ghost_modes(Enum):
-    Fight_mode = 1
-    Chase_mode = 2
-
+from .enums import directions, moves, Ghost_modes
 class Ghost(arcade.Sprite, ABC):
     normal_mode_texture: arcade.Texture
     def __init__(self, coordinates, maze, cell_size):

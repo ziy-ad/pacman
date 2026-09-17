@@ -1,4 +1,4 @@
-from enum import IntFlag, Enum
+from .enums import directions 
 from rich import print
 from .load_config import ConfigData
 import arcade
@@ -11,11 +11,6 @@ from pathlib import Path
 from .ghosts_algorithm import Ghost_modes, Ghost
 install()
 
-class directions(IntFlag):
-    UP = 1
-    RIGHT = 2
-    DOWN = 4
-    LEFT = 8
 
 class Point:
     def __init__(self,x, y):

@@ -41,7 +41,7 @@ class CheatModeView(arcade.View):
         )
         self.is_toggel = False
         self.is_toggel_time = 0.0
-        self.toggel_value = True
+        self.toggel_value = ""
         self.boolean_map = {True: False, False: True}
 
     def on_draw(self):
@@ -91,40 +91,46 @@ class CheatModeView(arcade.View):
 
 
     def on_key_press(self, symbol: int, modifiers: int):
+        self.is_toggel = False
+        self.is_toggel_time = 0
+        self.toggel_text.font_size = 0
+        self.toggel_text.visible = True
+        
         if symbol == arcade.key.UP:
             self.selected = (self.selected - 1) % len(self.options)
         elif symbol == arcade.key.DOWN:
             self.selected = (self.selected + 1) % len(self.options)
-        elif symbol in (arcade.key.RETURN, arcade.key.ENTER) and not self.is_toggel:
+        elif symbol in (arcade.key.RETURN, arcade.key.ENTER):
             label = self.options[self.selected]
             if label == "Increase Speed":
                 self.window.show_view(speed_view(self.pause_menu))
             elif label == "Invincibility":
                 value = self.pause_menu.game_view.cheater.invincible
                 self.pause_menu.game_view.cheater.invincible = self.boolean_map[value]
-                self.toggel_value = self.boolean_map[value]
+                self.toggel_value = f"{self.boolean_map[value]}"
                 self.is_toggel = True
             elif label == "Ghost Freeze":
                 value = self.pause_menu.game_view.cheater.ghost_freeze
                 self.pause_menu.game_view.cheater.ghost_freeze = self.boolean_map[value]
-                self.toggel_value = self.boolean_map[value]
+                self.toggel_value = f"{self.boolean_map[value]}"
                 self.is_toggel = True
             elif label == "Show Ghosts Path":
                 value = self.pause_menu.game_view.cheater.show_ghost_path
-                self.toggel_value = self.boolean_map[value]
+                self.toggel_value = f"{self.boolean_map[value]}"
                 self.is_toggel = True
                 self.pause_menu.game_view.cheater.show_ghost_path = self.boolean_map[value]
             elif label == "Level Skip":
                 value = self.pause_menu.game_view.cheater.level_skip
-                self.toggel_value = self.boolean_map[value]
+                self.toggel_value = f"{self.boolean_map[value]}"
                 self.is_toggel = True
                 self.pause_menu.game_view.cheater.level_skip = self.boolean_map[value]
             elif label == "Extra Lives":
                 self.pause_menu.game_view.lives += 1
+                self.is_toggel = True
                 live = self.pause_menu.game_view.live_pac_man
                 self.pause_menu.game_view.live_textures += [live]
+                self.toggel_value = f"Lives: {self.pause_menu.game_view.lives}"
                 self.pause_menu.game_view.sort_lives()
-                # self.pause_menu.game_view.live_textures.sort()
             elif label == "Back":
                 self.window.show_view(self.pause_menu)
         elif symbol == arcade.key.ESCAPE:
@@ -137,7 +143,7 @@ class speed_view(arcade.View):
         super().__init__( background_color=arcade.color.BLACK)
         self.cy = self.height // 2
         self.pause_menu = pause_menu
-        self.cell_size = self.pause_menu.game_view.cell_size
+        self.cell_size = 60
         self.start_x = int((self.width // 2) - self.cell_size * 6)
         self.end_x = int((self.width // 2) + self.cell_size * 6)
         self.pac_man_position = Point(self.start_x, self.cy)
@@ -161,7 +167,6 @@ class speed_view(arcade.View):
             arcade.load_texture("src/assets/pacman_open.png"),
         ]
     def draw_background(self):
-        cell_size = self.pause_menu.game_view.cell_size
         r,g,b, _ = arcade.color.WHITE
         for x in range(0, int(self.width * 3), 40):
             arcade.draw_line(x, 0, x  , self.height, (r,g,b, 100), 1)

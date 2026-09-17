@@ -47,6 +47,15 @@ class Pacman(arcade.View):
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
+        self.pac_gums = arcade.SpriteList()
+        self.pac_gum_objects = {}
+        # spawn the ghosts in the corners of the maze
+        self.corner_grid_coords = [
+            (0, 0),
+            (len(self.maze.maze[0]) - 1, 0),
+            (0, len(self.maze.maze) - 1),
+            (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
+        ]
         self.map_maze_coordinates()
         self.lives = self.parser.lives
 
@@ -127,6 +136,7 @@ class Pacman(arcade.View):
         self.cheater = CheatMode()
         self.pac_man_next = 1
         self.pac_man_frame_index = 0
+
         self.pac_man_possition = self.init_pacman_possition()
         self.pac_man = self.pac_man_frames[self.pac_man_next]
         self.visited_cells = set()
@@ -144,7 +154,7 @@ class Pacman(arcade.View):
         self.edible = False
         self.edible_duration = 0.0
         self.edible_time = 0.0
-        self.speed = 0.05
+        self.speed = 0.1
         self.current_level = 0
         self.inv_start_time = 0.0
         self.inv_freeze_time = 4.0
@@ -152,15 +162,9 @@ class Pacman(arcade.View):
         self.congrats = False
         self.scoreboard.load_scores()
         self.ghost_list: arcade.SpriteList[Ghost] = arcade.SpriteList()
-        # spawn the ghosts in the corners of the maze
-        self.corner_grid_coords = [
-            (0, 0),
-            (len(self.maze.maze[0]) - 1, 0),
-            (0, len(self.maze.maze) - 1),
-            (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
-        ]
+
         self.ghost_name = ["Pinky", "Blinky", "Clyde", "Inky"]
-        self.ghost_speed = self.speed
+        self.ghost_speed = round(self.speed * 0.4, 2)
         self.set_ghosts()
         self.start_time = None
     def set_pac_man_lives(self):
@@ -173,12 +177,20 @@ class Pacman(arcade.View):
             random_seed = self.parser.seed
         else:
             random_seed = random.randint(0, 1000000)
+        self.pac_gums.clear()
+        self.pac_gum_objects.clear()
         self.maze = MazeGenerator(seed=random_seed, size=(self.parser.levels[self.current_level]["width"], self.parser.levels[self.current_level]["height"]))
         self.maze.generate(seed=random_seed)
         self.cell_positions = [[] for i in  range(len(self.maze.maze))]
         self.forbiden_cells = set()
         self.points_cord = {}
         self.cell_size = int(min(self.width  / len(self.maze.maze[0]), (self.height - 120)  / len(self.maze.maze)))
+        self.corner_grid_coords = [
+            (0, 0),
+            (len(self.maze.maze[0]) - 1, 0),
+            (0, len(self.maze.maze) - 1),
+            (len(self.maze.maze[0]) - 1, len(self.maze.maze) - 1),
+        ]
         self.map_maze_coordinates()
         self.pac_man_possition = self.init_pacman_possition()
         self.visited_cells = set()
@@ -285,6 +297,7 @@ class Pacman(arcade.View):
                     case directions.LEFT:
                         all_frames[dir] += [frame.flip_horizontally()]
         return all_frames
+    
 
     def map_maze_coordinates(self):
         num_rows = len(self.maze.maze)
@@ -305,6 +318,12 @@ class Pacman(arcade.View):
                     self.forbiden_cells.add((idx, idy))
                 else:
                     self.points_cord.update({(x, y): (idx, idy)})
+                    if (idx, idy) in self.corner_grid_coords:
+                        gum = arcade.SpriteCircle(3, arcade.color.YELLOW, False, x, y)
+                    else:
+                        gum = arcade.SpriteCircle(2, arcade.color.BLUE_GRAY, False, x, y)
+                    self.pac_gums.append(gum)
+                    self.pac_gum_objects[(x, y)] = gum
                 self.cell_positions[idy] += [(x, y)]
                 x += self.cell_size    
 
@@ -377,8 +396,10 @@ class Pacman(arcade.View):
             self.pac_man_seconds = 0
     def update_pac_gum_count(self):
         px, py = self.pac_man_possition
-        if (px, py) in self.points_cord and (px, py) not in self.visited_cells:
-            self.visited_cells.add((px, py))
+        if (px, py) in self.points_cord and (px, py) in self.pac_gum_objects:
+            gum = self.pac_gum_objects[(px, py)]
+            self.pac_gums.remove(gum)
+            del self.pac_gum_objects[(px, py)]
             if self.points_cord[(px, py)] in self.corner_grid_coords:
                 self.score += self.parser.points_per_super_pacgum
                 self.change_ghost_texture = True
@@ -563,38 +584,39 @@ class Pacman(arcade.View):
         arcade.draw_rect_outline(rect, (r,g,b, 100), 2)
 
     def draw_map(self):
-        center_x = len(self.cell_positions) // 2
-        center_y = len(self.cell_positions[0]) // 2
-        mid = self.cell_positions[center_x][center_y]
-
+        center_y = len(self.cell_positions) // 2
+        center_x = len(self.cell_positions[0]) // 2
+        mid = self.cell_positions[center_y][center_x]
+        x, y = mid
+        rect = arcade.rect.XYWH(x, y, self.cell_size * self.maze._width, self.cell_size * self.maze._height)
+        arcade.draw_rect_filled(rect, arcade.color.BLACK)
         self.visited_cells.add(mid)
         for idy, row in enumerate(self.cell_positions):
             for idx, cell in enumerate(row):
                 x, y = cell
-                start_x = x - self.cell_size // 2
-                end_x = x + self.cell_size // 2
-                start_y = y - self.cell_size // 2
-                end_y = y + self.cell_size // 2
+                start_x = x - self.cell_size / 2
+                end_x = x + self.cell_size / 2
+                start_y = y - self.cell_size / 2
+                end_y = y + self.cell_size / 2
 
-                rect = arcade.rect.XYWH(x, y, self.cell_size, self.cell_size)
-                if (idx, idy) not in self.forbiden_cells:
-                    arcade.draw_rect_filled(rect, arcade.color.BLACK)
-                else:
+                if (idx, idy)  in self.forbiden_cells:
+                    rect = arcade.rect.XYWH(x, y, self.cell_size, self.cell_size)
+                    # arcade.draw_rect_filled(rect, arcade.color.BLACK)
                     arcade.draw_rect_filled(rect, arcade.color.SKY_BLUE)
                 if self.maze.maze[idy][idx] & directions.UP:
-                    arcade.draw_line(start_x, end_y, end_x, end_y , self.wall_color , line_width=5)
+                    arcade.draw_line(start_x, end_y, end_x, end_y , self.wall_color , line_width=2)
                 if self.maze.maze[idy][idx] & directions.RIGHT:
-                    arcade.draw_line(end_x, start_y , end_x, end_y, self.wall_color , line_width=5)
+                    arcade.draw_line(end_x, start_y , end_x, end_y, self.wall_color , line_width=2)
                 if self.maze.maze[idy][idx] & directions.LEFT:
-                    arcade.draw_line(start_x, start_y, start_x, end_y, self.wall_color , line_width=5)
+                    arcade.draw_line(start_x, start_y, start_x, end_y, self.wall_color , line_width=2)
                 if self.maze.maze[idy][idx] & directions.DOWN:
-                    arcade.draw_line(start_x, start_y , end_x, start_y,self.wall_color , line_width=5)
-                if (x, y) not in self.visited_cells and (idx, idy) not in self.forbiden_cells:
-                    if self.points_cord[(x, y)] in self.corner_grid_coords:
-                        arcade.draw_point(x, y , arcade.color.YELLOW, size=8)
-                    else:
-                        arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
-
+                    arcade.draw_line(start_x, start_y , end_x, start_y,self.wall_color , line_width=2)
+                # if (x, y) not in self.visited_cells and (idx, idy) not in self.forbiden_cells:
+                #     if self.points_cord[(x, y)] in self.corner_grid_coords:
+                #         arcade.draw_point(x, y , arcade.color.YELLOW, size=8)
+                #     else:
+                #         arcade.draw_point(x, y , arcade.color.BABY_BLUE_EYES, size=4)
+        self.pac_gums.draw()
     def on_draw(self):
         self.clear()
         

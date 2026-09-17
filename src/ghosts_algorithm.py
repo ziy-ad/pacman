@@ -4,6 +4,7 @@ import random
 import time
 import arcade
 from pathlib import Path
+from collections import deque
 
 class directions(IntFlag):
     UP = 1
@@ -35,7 +36,7 @@ class Ghost(arcade.Sprite, ABC):
         self.height = self.cell_size * 0.7
         self.coordinates: tuple[int, int] = coordinates
         self.init_coord: tuple[int, int] = coordinates
-        self.last_coordinates = []
+        self.last_coordinates = deque()
         self.target_x = 0
         self.target_y = 0
         self.eatable = False
@@ -44,6 +45,7 @@ class Ghost(arcade.Sprite, ABC):
         self.normal_mode_texture = self.all_texture[self.direction]
         self.texture = self.normal_mode_texture
         self.path = []
+        self.cach = {}
     def load_textures(self):
         assets_path = Path(__file__).resolve().parent / "assets" / "ghosts"
         for dir in directions:
@@ -100,7 +102,7 @@ class Ghost(arcade.Sprite, ABC):
                 used_cells.add(next_cell)
                 gx, gy = next_cell
                 if len(self.last_coordinates) > 2:
-                    self.last_coordinates.pop(0)
+                    self.last_coordinates.popleft()
                 self.last_coordinates.append(self.coordinates)
                 self.coordinates = (gx, gy)
                 self.target_x, self.target_y = cell_positions[gy][gx]
@@ -147,10 +149,10 @@ class Ghost(arcade.Sprite, ABC):
         rows, cols = len(self.maze), len(self.maze[0])
         recent_coordinates = set(self.last_coordinates)
 
-        queue = [self.coordinates]
+        queue = deque([self.coordinates])
         visited = {self.coordinates: None}
         while queue:
-            cx, cy = queue.pop(0)
+            cx, cy = queue.popleft()
             for move in moves:
                 wall_flag, dx, dy = move.value
                 nx, ny = cx + dx, cy + dy
@@ -240,10 +242,10 @@ class Ghost(arcade.Sprite, ABC):
             """Real corridor distance from source to every reachable cell."""
             rows, cols = len(self.maze), len(self.maze[0])
             dist = {source: 0}
-            queue = [source]
+            queue = deque([source])
 
             while queue:
-                cx, cy = queue.pop(0)
+                cx, cy = queue.popleft()
                 for move in moves:
                     wall_flag, dx, dy = move.value
                     nx, ny = cx + dx, cy + dy

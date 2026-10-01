@@ -17,7 +17,7 @@ class ConfigData:
     points_per_pacgum: int
     points_per_super_pacgum: int
     points_per_ghost: int
-    seed: None | int | float | str | bytes
+    seed: int
     level_max_time: int
 
 class ParseConfig:
@@ -174,6 +174,7 @@ class ParseConfig:
             "points_per_pacgum",
             "points_per_super_pacgum",
             "points_per_ghost",
+            "seed"
         ]
 
         if "highscore_filename" in self.loaded_json.keys():
@@ -211,7 +212,9 @@ class ParseConfig:
         for key in int_keys:
             if key in self.loaded_json.keys():
                 value = self.loaded_json.get(key)
-                if isinstance(value, int) and value > 0:
+                if key == "seed" and isinstance(value, int):
+                    validated_data[key] = value
+                elif isinstance(value, int) and value > 0:
                     validated_data[key] = value
                 else:
                     if not isinstance(value, int):
@@ -220,24 +223,14 @@ class ParseConfig:
                         print(f"value of {key} should be positive", end=" ")
                     print(f"using {validated_data[key]} as default")
 
-        if "seed" in self.loaded_json.keys():
-            seed = self.loaded_json.get("seed")
-            try:
-                rg = random.Random()
-                rg.seed(seed)
-                validated_data["seed"] = seed
-            except Exception as e:
-                print(e)
-                print("using 42 as default !")
-
         if "level_max_time" in self.loaded_json.keys():
             level_max_time = self.loaded_json.get("level_max_time")
             if isinstance(level_max_time, int) and level_max_time > 90:
                 validated_data["level_max_time"] = level_max_time
 
         if "levels" in self.loaded_json.keys():
-            levels = self.loaded_json.get("levels")
-
+            levels = self.loaded_json.get("levels" , None)
+            levels = levels if levels else default_levels 
             for i, level in enumerate(levels):
                 use_default = 0
                 width = level.get("width")

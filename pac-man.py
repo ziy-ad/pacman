@@ -1,7 +1,7 @@
 import arcade
-from .load_config import ParseConfig
-from .pacman import Pacman
-from .main_menu import MainMenu
+from src.load_config import ParseConfig
+from src.pacman import Pacman
+from src.main_menu import MainMenu
 def main():
     parse = ParseConfig()
     window = arcade.Window(fullscreen=True, vsync=False)

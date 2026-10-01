@@ -28,7 +28,6 @@ class Ghost(arcade.Sprite, ABC):
         self.normal_mode_texture = self.all_texture[self.direction]
         self.texture = self.normal_mode_texture
         self.path = []
-        self.cach = {}
     def load_textures(self):
         assets_path = Path(__file__).resolve().parent / "assets" / "ghosts"
         for dir in directions:

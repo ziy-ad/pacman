@@ -1,5 +1,5 @@
 run:
-	uv run -m src config.json
+	uv run pac-man.py config.json
 
 install:
 	uv sync

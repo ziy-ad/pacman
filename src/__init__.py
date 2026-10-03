@@ -1,3 +1,5 @@
+"""Pac-Man game package."""
+
 from .load_config import ParseConfig
 from .pacman import Pacman
 from .main_menu import MainMenu

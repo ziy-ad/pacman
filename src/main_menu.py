@@ -1,3 +1,5 @@
+"""Menus and score screens."""
+
 import arcade
 from .pacman import Pacman
 from .score_tracker import score_board
@@ -7,9 +9,14 @@ from .speed_screen import CheatModeView
 
 
 class MainMenu(arcade.View):
+    """Main menu view."""
+
     def __init__(self, window: arcade.Window, game_view: Pacman) -> None:
+        """Set up the main menu buttons."""
         super().__init__(window)
-        self.background = arcade.load_texture("src/assets/pacmanbackground.jpg")
+        self.background = arcade.load_texture(
+            "src/assets/pacmanbackground.jpg"
+        )
         self.game_view = game_view
         self.pause_view = PauseMenu(window, game_view, self)
         self.buttons = ["Play", "Highscores", "CheatMode", "Quit"]
@@ -19,7 +26,8 @@ class MainMenu(arcade.View):
         self.button_spacing = 20
         self.game_view.set_main_menu(self)
 
-    def on_draw(self):
+    def on_draw(self) -> None:
+        """Draw the main menu."""
         self.clear()
         arcade.draw_texture_rect(
             self.background, arcade.LRBT(0, self.width, 0, self.height)
@@ -50,7 +58,8 @@ class MainMenu(arcade.View):
                 bold=i == self.selected,
             ).draw()
 
-    def on_key_press(self, symbol, modifiers):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        """Handle the main menu keys."""
         if symbol == arcade.key.UP:
             self.selected = (self.selected - 1) % len(self.buttons)
 
@@ -79,9 +88,12 @@ class MainMenu(arcade.View):
 
 
 class PauseMenu(arcade.View):
+    """Pause menu view."""
+
     def __init__(
         self, window: arcade.Window, game_view: Pacman, main_view: MainMenu
     ) -> None:
+        """Set up the pause menu buttons."""
         super().__init__(window, background_color=arcade.color.BLACK)
         self.game_view = game_view
         self.main_view = main_view
@@ -93,13 +105,15 @@ class PauseMenu(arcade.View):
         self.game_view.set_main_menu(self)
         self.is_started = self.game_view.start_time is not None
 
-    def on_draw(self):
+    def on_draw(self) -> None:
+        """Draw the pause menu."""
         self.clear()
         cx = self.width // 2
         cy = self.height // 2
 
         arcade.draw_texture_rect(
-            self.main_view.background, arcade.LRBT(0, self.width, 0, self.height)
+            self.main_view.background,
+            arcade.LRBT(0, self.width, 0, self.height),
         )
         for i, label in enumerate(self.buttons):
             y = cy - i * (self.button_height + self.button_spacing)
@@ -124,7 +138,8 @@ class PauseMenu(arcade.View):
                 bold=i == self.selected,
             ).draw()
 
-    def on_key_press(self, symbol, modifiers):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        """Handle the pause menu keys."""
         if symbol == arcade.key.UP:
             self.selected = (self.selected - 1) % len(self.buttons)
 
@@ -158,6 +173,8 @@ class PauseMenu(arcade.View):
 
 
 class GameOverView(arcade.View):
+    """View asking the player name after the game."""
+
     def __init__(
         self,
         window: arcade.Window,
@@ -165,6 +182,7 @@ class GameOverView(arcade.View):
         score: int,
         pacman_view: Pacman,
     ) -> None:
+        """Set up the game over view."""
         super().__init__(window, background_color=arcade.color.BLACK)
         self.button_width = 220
         self.button_height = 52
@@ -178,9 +196,12 @@ class GameOverView(arcade.View):
         self.message = "Enter your name (max 10, letters/numbers/spaces):"
         self.valid_re = re.compile(r"^[A-Za-z0-9 ]{1,10}$")
 
-    def on_draw(self):
+    def on_draw(self) -> None:
+        """Draw the name input and the score."""
         self.clear()
-        r = arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height)
+        r = arcade.rect.XYWH(
+            self.width // 2, self.height // 2, self.width, self.height
+        )
         arcade.draw_texture_rect(self.background, r)
         cx = self.width // 2
         cy = self.height // 2
@@ -203,16 +224,18 @@ class GameOverView(arcade.View):
             anchor_x="center",
         ).draw()
 
-    def on_key_press(self, symbol, modifiers):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        """Handle the name input keys."""
         if symbol in (arcade.key.RETURN, arcade.key.ENTER):
             name = self.input_name.strip()
             if self.valid_re.match(name):
-                # save and show scoreboard
                 self.scoreboard.add_score(name, self.score)
                 from .main_menu import ScoreboardView
 
                 self.window.show_view(
-                    ScoreboardView(self.window, self.scoreboard, self.pacman_view)
+                    ScoreboardView(
+                        self.window, self.scoreboard, self.pacman_view
+                    )
                 )
                 return
             else:
@@ -227,6 +250,7 @@ class GameOverView(arcade.View):
             self.window.show_view(MainMenu(self.window, self.pacman_view))
 
     def on_text(self, text: str) -> None:
+        """Add the typed characters to the name."""
         if not text:
             return
         for ch in text:
@@ -235,14 +259,21 @@ class GameOverView(arcade.View):
 
 
 class ScoreboardView(arcade.View):
+    """View showing the highscores."""
+
     def __init__(
-        self, window: arcade.Window, scoreboard: score_board, pacman_view: Pacman
+        self,
+        window: arcade.Window,
+        scoreboard: score_board,
+        pacman_view: Pacman,
     ) -> None:
+        """Store the scoreboard and the game view."""
         super().__init__(window, background_color=arcade.color.BLACK)
         self.scoreboard = scoreboard
         self.pacman_view = pacman_view
 
-    def on_draw(self):
+    def on_draw(self) -> None:
+        """Draw the highscores."""
         self.clear()
         cx = self.width // 2
         cy = self.height // 2
@@ -310,9 +341,9 @@ class ScoreboardView(arcade.View):
             anchor_x="center",
         ).draw()
 
-    def on_key_press(self, symbol, modifiers):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        """Go back to the main menu."""
         if symbol in (arcade.key.RETURN, arcade.key.ENTER, arcade.key.ESCAPE):
-            # Return to main menu; reuse pacman_view instance without resetting
             self.pacman_view.reset()
             self.pacman_view.set_pac_man_lives()
             self.pacman_view.score = 0

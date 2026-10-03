@@ -1,7 +1,10 @@
+"""Config file loading and validation."""
+
 import json
 import sys
 from pathlib import Path
 from dataclasses import dataclass
+from typing import Any, cast
 
 MIN_LENGTH = 10
 MAX_LENGTH = 40
@@ -9,7 +12,9 @@ MAX_LENGTH = 40
 
 @dataclass
 class ConfigData:
-    levels: list[dict]
+    """Validated game settings."""
+
+    levels: list[dict[str, Any]]
     highscore_filename: str
     lives: int
     pacgum: int
@@ -21,10 +26,10 @@ class ConfigData:
 
 
 class ParseConfig:
-    """Class that contain and parse the config and returning a valid json/dict"""
+    """Parse the config file and return a valid config object."""
 
-    def __init__(self):
-        """class attributes where the config_file data should be stored"""
+    def __init__(self) -> None:
+        """Load, check and store the config file data."""
         self.path = ParseConfig.get_path()
         try:
             self.loaded_json = self.validate_file()
@@ -35,15 +40,14 @@ class ParseConfig:
 
     @staticmethod
     def get_path() -> str:
-        """function that check if the number of arguments is 2 and return the 2nd parameter"""
+        """Return the config file path given on the command line."""
         if len(sys.argv) != 2:
             print("Usage: uv run -m src config.json")
             exit(1)
         return sys.argv[1]
 
-    def validate_file(self) -> dict:
-        """this function is responsable about filtring comments from the config file and try
-        to load the json if its valid raise error if the json file isn't valid"""
+    def validate_file(self) -> dict[str, Any]:
+        """Strip the comments from the config file and load its json."""
         filtred_file = ""
         in_comment = 0
         with open(self.path) as f:
@@ -70,14 +74,9 @@ class ParseConfig:
                 print("comment still not closed")
                 exit(1)
 
-        # for line in filtred_file.splitlines():
-        #     line = re.sub(r"#.*$", "", line)
-        #     line = re.sub(r"//.*$", "", line)
-        #     line = re.sub(r"/\*.*?\*/", "", line)
-        #     last_text += line
-
-        def strip_json_comments(text):
-            out = []
+        def strip_json_comments(text: str) -> str:
+            """Return the text without comments."""
+            out: list[str] = []
             i = 0
             n = len(text)
 
@@ -104,19 +103,16 @@ class ParseConfig:
                     i += 1
                     continue
 
-                # //
                 if text.startswith("//", i):
                     while i < n and text[i] != "\n":
                         i += 1
                     continue
 
-                # #
                 if c == "#":
                     while i < n and text[i] != "\n":
                         i += 1
                     continue
 
-                # /* */
                 if text.startswith("/*", i):
                     i += 2
                     while i + 1 < n and not text.startswith("*/", i):
@@ -129,20 +125,15 @@ class ParseConfig:
 
             return "".join(out)
 
-        # filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
-        # filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
-        # filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
-        # print(filtred_file)
         try:
-            return json.loads(filtred_file)
+            return cast(dict[str, Any], json.loads(filtred_file))
         except Exception as e:
             print(f"in config file: {e}")
             exit(1)
 
-    def validate_data(self) -> dict:
-        """Check if the required keys in the config file and their values are valid, if not log a clear message
-        and continue with the default value"""
-        default_levels: list[dict] = [
+    def validate_data(self) -> dict[str, Any]:
+        """Check the config values and use defaults when invalid."""
+        default_levels: list[dict[str, Any]] = [
             {"width": 10, "height": 10},
             {"width": 25, "height": 25},
             {"width": 29, "height": 25},
@@ -155,7 +146,7 @@ class ParseConfig:
             {"width": 41, "height": 41},
         ]
 
-        validated_data = {
+        validated_data: dict[str, Any] = {
             "highscore_filename": "track_score.json",
             "lives": 3,
             "pacgum": 42,
@@ -181,13 +172,21 @@ class ParseConfig:
             if isinstance(file_name, str):
                 if file_name.strip() == "":
                     print(
-                        "Reciving empty file name using 'track_score.json' as default"
+                        "Reciving empty file name using "
+                        "'track_score.json' as default"
                     )
-                elif len(file_name.split(".")) != 2 or not file_name.endswith(".json"):
-                    print("file name should be a string with .json extension", end=" ")
+                elif len(file_name.split(".")) != 2 or not file_name.endswith(
+                    ".json"
+                ):
+                    print(
+                        "file name should be a string with .json extension",
+                        end=" ",
+                    )
                     print("using 'track_score.json' as default")
                 elif ".." in file_name or Path(file_name).is_absolute():
-                    print("It could be risk to use a file another path", end=" ")
+                    print(
+                        "It could be risk to use a file another path", end=" "
+                    )
                     print("using 'track_score.json' as default")
                 else:
                     validated_data["highscore_filename"] = file_name
@@ -204,7 +203,10 @@ class ParseConfig:
                 with open(validated_data["highscore_filename"], "w") as f:
                     json.dump([], f, indent=4)
             except Exception as e:
-                print(f"could not create {validated_data['highscore_filename']}: {e}")
+                print(
+                    "could not create "
+                    f"{validated_data['highscore_filename']}: {e}"
+                )
                 exit(1)
         for key in int_keys:
             if key in self.loaded_json.keys():
@@ -251,7 +253,9 @@ class ParseConfig:
                     width = int(width)
                     if width < MIN_LENGTH or width > MAX_LENGTH:
                         print(
-                            f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" "
+                            "number not in range of "
+                            f"{MIN_LENGTH}-{MAX_LENGTH}",
+                            end=" ",
                         )
                         print("using a default level for width and heigth")
                         use_default = 1
@@ -261,9 +265,13 @@ class ParseConfig:
                     print("height should be positive")
                 else:
                     height = int(height)
-                    if (height < MIN_LENGTH or height > MAX_LENGTH) and not use_default:
+                    if (
+                        height < MIN_LENGTH or height > MAX_LENGTH
+                    ) and not use_default:
                         print(
-                            f"number not in range of {MIN_LENGTH}-{MAX_LENGTH}", end=" "
+                            "number not in range of "
+                            f"{MIN_LENGTH}-{MAX_LENGTH}",
+                            end=" ",
                         )
                         print("using a default level for width and heigth")
                         use_default = 1

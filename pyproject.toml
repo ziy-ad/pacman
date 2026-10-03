@@ -9,6 +9,7 @@ dependencies = [
     "flake8>=7.4.1",
     "mazegenerator",
     "mypy>=2.4.0",
+    "pyinstaller>=6.22.3",
     "rich>=15.0.0",
 ]
 

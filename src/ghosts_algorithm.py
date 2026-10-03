@@ -1,16 +1,27 @@
+"""Ghost classes and their movement algorithms."""
+
 from abc import ABC, abstractmethod
 import random
 import time
 import arcade
 from pathlib import Path
 from collections import deque
+from typing import Any
 from .enums import directions, moves, Ghost_modes
 
 
 class Ghost(arcade.Sprite, ABC):
+    """Base class of all the ghosts."""
+
     normal_mode_texture: arcade.Texture
 
-    def __init__(self, coordinates, maze, cell_size):
+    def __init__(
+        self,
+        coordinates: tuple[int, int],
+        maze: list[list[int]],
+        cell_size: int,
+    ) -> None:
+        """Set up the ghost sprite and its state."""
         self.all_texture: dict[directions, arcade.Texture] = {}
         super().__init__(scale=0.1)
         self.maze = maze
@@ -24,25 +35,31 @@ class Ghost(arcade.Sprite, ABC):
         self.height = self.cell_size * 0.7
         self.coordinates: tuple[int, int] = coordinates
         self.init_coord: tuple[int, int] = coordinates
-        self.last_coordinates = deque()
-        self.target_x = 0
-        self.target_y = 0
+        self.last_coordinates: deque[tuple[int, int]] = deque()
+        self.target_x: float = 0
+        self.target_y: float = 0
         self.eatable = False
-        self.time_to_respawn = 0
+        self.time_to_respawn: float = 0
         self.load_textures()
         self.normal_mode_texture = self.all_texture[self.direction]
         self.texture = self.normal_mode_texture
-        self.path = []
+        self.path: list[tuple[int, int]] = []
 
-    def load_textures(self):
+    def load_textures(self) -> None:
+        """Load the textures of each direction."""
         assets_path = Path(__file__).resolve().parent / "assets" / "ghosts"
         for dir in directions:
             path = (
-                assets_path / self.__class__.__name__ / (str(dir.name).lower() + ".png")
+                assets_path
+                / self.__class__.__name__
+                / (str(dir.name).lower() + ".png")
             )
             self.all_texture[dir] = arcade.load_texture(path)
 
-    def update(self, delta_time: float = 1 / 60, *args, **kwargs) -> None:
+    def update(
+        self, delta_time: float = 1 / 60, *args: Any, **kwargs: Any
+    ) -> None:
+        """Move the ghost and choose its next cell."""
         cell_positions = kwargs["cell_positions"]
         used_cells = kwargs["used_cells"]
         ghost_speed = kwargs["ghost_speed"]
@@ -73,12 +90,9 @@ class Ghost(arcade.Sprite, ABC):
             and abs(self.center_y - self.target_y) <= ghost_step
         ):
 
-            # Snap to exact target to prevent floating point drift
             self.center_x = self.target_x
             self.center_y = self.target_y
             self.path.clear()
-            # Ask AI for the next grid cell to move to
-            # position = self.cell_positions[self.pac_man_possition.y][self.pac_man_possition.x]
             if self.mode == Ghost_modes.Fight_mode:
                 next_cell = self.run_away(pac_man_grid)
             else:
@@ -109,7 +123,6 @@ class Ghost(arcade.Sprite, ABC):
                     self.normal_mode_texture = self.all_texture[self.direction]
                     self.texture = self.normal_mode_texture
         else:
-            # Smoothly move the sprite towards the target position
             if self.center_x < self.target_x:
                 self.center_x += ghost_step
             elif self.center_x > self.target_x:
@@ -120,16 +133,31 @@ class Ghost(arcade.Sprite, ABC):
             elif self.center_y > self.target_y:
                 self.center_y -= ghost_step
 
-    def reset(self, cell_position):
+    def reset(self, cell_position: list[list[tuple[float, float]]]) -> None:
+        """Send the ghost back to its starting cell."""
         gx, gy = self.init_coord
         self.coordinates = self.init_coord
         self.center_x, self.center_y = cell_position[gy][gx]
         self.target_x, self.target_y = cell_position[gy][gx]
 
     @abstractmethod
-    def get_path(self, start_time, used_cells, pacman_pos, edible, last_key=None): ...
+    def get_path(
+        self,
+        start_time: float,
+        used_cells: set[tuple[int, int]],
+        pacman_pos: tuple[int, int],
+        last_key: directions | None = None,
+    ) -> tuple[int, int]:
+        """Return the next cell the ghost should go to."""
+        ...
 
-    def bfs_to_next_move(self, used_cells, pacman_pos, last_key=None):
+    def bfs_to_next_move(
+        self,
+        used_cells: set[tuple[int, int]],
+        pacman_pos: tuple[int, int],
+        last_key: directions | None = None,
+    ) -> tuple[int, int]:
+        """Return the next cell on the shortest path to the target."""
         if self.coordinates == pacman_pos:
             return self.coordinates
 
@@ -137,7 +165,7 @@ class Ghost(arcade.Sprite, ABC):
         recent_coordinates = set(self.last_coordinates)
 
         queue = deque([self.coordinates])
-        visited = {self.coordinates: None}
+        visited: dict[tuple[int, int], Any] = {self.coordinates: None}
         while queue:
             cx, cy = queue.popleft()
             for move in moves:
@@ -167,7 +195,7 @@ class Ghost(arcade.Sprite, ABC):
 
                 queue.append((nx, ny))
         gx, gy = self.coordinates
-        fallback = []
+        fallback: list[tuple[int, int]] = []
         for move in moves:
             wall_flag, dx, dy = move.value
             nx, ny = gx + dx, gy + dy
@@ -181,16 +209,19 @@ class Ghost(arcade.Sprite, ABC):
             fallback.append((nx, ny))
 
         if fallback:
-            filtered = [cell for cell in fallback if cell not in recent_coordinates]
+            filtered = [
+                cell for cell in fallback if cell not in recent_coordinates
+            ]
             th = random.choice(filtered if filtered else fallback)
             self.path += [th]
             return th
 
         return self.coordinates
 
-    def random_next_move(self):
+    def random_next_move(self) -> tuple[int, int]:
+        """Return a random neighbouring cell."""
         gx, gy = self.coordinates
-        options = []
+        options: list[tuple[int, int]] = []
         for move in moves:
             wall_flag, dx, dy = move.value
             nx, ny = gx + dx, gy + dy
@@ -204,7 +235,7 @@ class Ghost(arcade.Sprite, ABC):
         if not options:
             return self.coordinates
 
-        filtred_options = []
+        filtred_options: list[tuple[int, int]] = []
         for option in options:
             if option not in self.last_coordinates:
                 filtred_options.append(option)
@@ -217,12 +248,15 @@ class Ghost(arcade.Sprite, ABC):
         self.path += [th]
         return th
 
-    def run_away(self, pacman_pos):
+    def run_away(self, pacman_pos: tuple[int, int]) -> tuple[int, int]:
+        """Return the neighbouring cell farthest from Pac-Man."""
         gx, gy = self.coordinates
         rows, cols = len(self.maze), len(self.maze[0])
         far = float("inf")
 
-        def bfs_distances(source):
+        def bfs_distances(
+            source: tuple[int, int],
+        ) -> dict[tuple[int, int], int]:
             """Real corridor distance from source to every reachable cell."""
             rows, cols = len(self.maze), len(self.maze[0])
             dist = {source: 0}
@@ -245,7 +279,7 @@ class Ghost(arcade.Sprite, ABC):
 
         dist = bfs_distances(pacman_pos)
 
-        valid = {}
+        valid: dict[tuple[int, int], float] = {}
         for move in moves:
             wall_flag, dx, dy = move.value
             nx, ny = gx + dx, gy + dy
@@ -258,7 +292,9 @@ class Ghost(arcade.Sprite, ABC):
         if not valid:
             return self.coordinates
 
-        forward = {k: v for k, v in valid.items() if k not in self.last_coordinates}
+        forward = {
+            k: v for k, v in valid.items() if k not in self.last_coordinates
+        }
         if forward:
             valid = forward
 
@@ -268,12 +304,30 @@ class Ghost(arcade.Sprite, ABC):
 
 
 class Inky(Ghost):
-    def __init__(self, coordinates, maze, cell_size, blinky: Ghost):
-        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
+    """Ghost that targets a cell based on Pac-Man and Blinky."""
+
+    def __init__(
+        self,
+        coordinates: tuple[int, int],
+        maze: list[list[int]],
+        cell_size: int,
+        blinky: Ghost,
+    ) -> None:
+        """Set up Inky and keep a reference to Blinky."""
+        super().__init__(
+            coordinates=coordinates, maze=maze, cell_size=cell_size
+        )
         self.blinky = blinky
         self.required_time = 3
 
-    def get_path(self, start_time, used_cells, pacman_pos, last_key: directions = None):
+    def get_path(
+        self,
+        start_time: float,
+        used_cells: set[tuple[int, int]],
+        pacman_pos: tuple[int, int],
+        last_key: directions | None = None,
+    ) -> tuple[int, int]:
+        """Return the next cell, aiming ahead of Pac-Man."""
         current = time.time()
         if not pacman_pos:
             print("test")
@@ -284,11 +338,9 @@ class Inky(Ghost):
         if pacman_pos == self.coordinates:
             return self.coordinates
 
-        # if pacman_pos in used_cells:
-        #     return self.random_next_move()
         match last_key:
             case directions.UP:
-                target = (0, -2)
+                target: Any = (0, -2)
             case directions.DOWN:
                 target = (0, 2)
             case directions.LEFT:
@@ -313,11 +365,28 @@ class Inky(Ghost):
 
 
 class Pinky(Ghost):
-    def __init__(self, coordinates, maze, cell_size):
-        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
+    """Ghost that moves randomly."""
+
+    def __init__(
+        self,
+        coordinates: tuple[int, int],
+        maze: list[list[int]],
+        cell_size: int,
+    ) -> None:
+        """Set up Pinky."""
+        super().__init__(
+            coordinates=coordinates, maze=maze, cell_size=cell_size
+        )
         self.required_time = 0
 
-    def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
+    def get_path(
+        self,
+        start_time: float,
+        used_cells: set[tuple[int, int]],
+        pacman_pos: tuple[int, int],
+        last_key: directions | None = None,
+    ) -> tuple[int, int]:
+        """Return a random next cell once the delay is over."""
         current = time.time()
         if (current - start_time) < self.required_time:
             self.path += [self.coordinates]
@@ -332,21 +401,35 @@ class Pinky(Ghost):
 
 
 class Blinky(Ghost):
-    def __init__(self, coordinates, maze, cell_size):
-        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
+    """Ghost that chases Pac-Man directly."""
+
+    def __init__(
+        self,
+        coordinates: tuple[int, int],
+        maze: list[list[int]],
+        cell_size: int,
+    ) -> None:
+        """Set up Blinky."""
+        super().__init__(
+            coordinates=coordinates, maze=maze, cell_size=cell_size
+        )
 
         self.required_time = 6
 
-    def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
+    def get_path(
+        self,
+        start_time: float,
+        used_cells: set[tuple[int, int]],
+        pacman_pos: tuple[int, int],
+        last_key: directions | None = None,
+    ) -> tuple[int, int]:
+        """Return the next cell towards Pac-Man."""
         current = time.time()
         if (current - start_time) < self.required_time:
             return self.coordinates
 
         if self.coordinates == pacman_pos:
             return self.coordinates
-
-        # if pacman_pos in used_cells:
-        #     return self.random_next_move()
 
         rows, cols = len(self.maze), len(self.maze[0])
 
@@ -381,22 +464,36 @@ class Blinky(Ghost):
 
 
 class Clyde(Ghost):
-    def __init__(self, coordinates, maze, cell_size):
-        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
+    """Ghost that chases Pac-Man or goes back to its corner."""
+
+    def __init__(
+        self,
+        coordinates: tuple[int, int],
+        maze: list[list[int]],
+        cell_size: int,
+    ) -> None:
+        """Set up Clyde."""
+        super().__init__(
+            coordinates=coordinates, maze=maze, cell_size=cell_size
+        )
         self.required_time = 9
 
         self.min_distance = 6
 
-    def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
+    def get_path(
+        self,
+        start_time: float,
+        used_cells: set[tuple[int, int]],
+        pacman_pos: tuple[int, int],
+        last_key: directions | None = None,
+    ) -> tuple[int, int]:
+        """Return the next cell, chasing or retreating."""
         current = time.time()
         if (current - start_time) < self.required_time:
             return self.coordinates
 
         if pacman_pos == self.coordinates:
             return self.coordinates
-
-        # if pacman_pos in used_cells:
-        #     return self.random_next_move()
 
         gx, gy = self.coordinates
         px, py = pacman_pos
@@ -410,8 +507,14 @@ class Clyde(Ghost):
 
         return self.bfs_to_next_move(used_cells, self.init_coord, last_key)
 
-    def get_position_infront(self, maze_grid, start_pos, direction, max_steps):
-        """Look up to max_steps ahead in the given direction, stopping at walls."""
+    def get_position_infront(
+        self,
+        maze_grid: list[list[int]],
+        start_pos: tuple[int, int],
+        direction: Any,
+        max_steps: int,
+    ) -> tuple[int, int]:
+        """Return the cell up to max_steps ahead, stopping at walls."""
         x, y = start_pos
         rows, cols = len(maze_grid), len(maze_grid[0])
 

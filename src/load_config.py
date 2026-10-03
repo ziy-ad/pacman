@@ -1,12 +1,11 @@
 import json
-import re
 import sys
-import random
 from pathlib import Path
 from dataclasses import dataclass
 
 MIN_LENGTH = 10
 MAX_LENGTH = 40
+
 
 @dataclass
 class ConfigData:
@@ -20,8 +19,10 @@ class ConfigData:
     seed: int
     level_max_time: int
 
+
 class ParseConfig:
     """Class that contain and parse the config and returning a valid json/dict"""
+
     def __init__(self):
         """class attributes where the config_file data should be stored"""
         self.path = ParseConfig.get_path()
@@ -74,7 +75,6 @@ class ParseConfig:
         #     line = re.sub(r"//.*$", "", line)
         #     line = re.sub(r"/\*.*?\*/", "", line)
         #     last_text += line
-
 
         def strip_json_comments(text):
             out = []
@@ -129,7 +129,6 @@ class ParseConfig:
 
             return "".join(out)
 
-
         # filtred_file = re.sub(r"#.*$", "", filtred_file, flags=re.MULTILINE)
         # filtred_file = re.sub(r"//.*$", "", filtred_file, flags=re.MULTILINE)
         # filtred_file = re.sub(r"/\*.*?\*/", "", filtred_file, flags=re.DOTALL)
@@ -174,7 +173,7 @@ class ParseConfig:
             "points_per_pacgum",
             "points_per_super_pacgum",
             "points_per_ghost",
-            "seed"
+            "seed",
         ]
 
         if "highscore_filename" in self.loaded_json.keys():
@@ -184,10 +183,8 @@ class ParseConfig:
                     print(
                         "Reciving empty file name using 'track_score.json' as default"
                     )
-                elif len(file_name.split('.')) != 2 or not file_name.endswith(".json"):
-                    print(
-                        "file name should be a string with .json extension", end=" "
-                    )
+                elif len(file_name.split(".")) != 2 or not file_name.endswith(".json"):
+                    print("file name should be a string with .json extension", end=" ")
                     print("using 'track_score.json' as default")
                 elif ".." in file_name or Path(file_name).is_absolute():
                     print("It could be risk to use a file another path", end=" ")
@@ -229,8 +226,8 @@ class ParseConfig:
                 validated_data["level_max_time"] = level_max_time
 
         if "levels" in self.loaded_json.keys():
-            levels = self.loaded_json.get("levels" , None)
-            levels = levels if levels else default_levels 
+            levels = self.loaded_json.get("levels", None)
+            levels = levels if levels else default_levels
             for i, level in enumerate(levels):
                 use_default = 0
                 width = level.get("width")
@@ -240,14 +237,12 @@ class ParseConfig:
                         default_levels.append(default_levels[i % 10])
                     continue
 
-                    
                 height = level.get("height")
                 if not height:
                     print("height key not found")
                     if i > 9:
                         default_levels.append(default_levels[i % 10])
                     continue
-
 
                 if not isinstance(width, int):
                     print("width should be positive")
@@ -283,4 +278,3 @@ class ParseConfig:
                         default_levels.append(default_levels[i % 10])
 
         return validated_data
-    

@@ -6,23 +6,26 @@ from typing import List
 class score_board:
     NAME_RE = re.compile(r"^[A-Za-z0-9 ]{1,10}$")
 
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self.scores: List[dict] = []
         self.path = path
         self.load_scores()
 
-    def load_scores(self):
+    def load_scores(self) -> None:
         try:
             with open(self.path, "r") as f:
                 data = json.load(f)
                 if isinstance(data, list):
-                    self.scores = [{"name": str(e.get("name", "")), "score": int(e.get("score"))} for e in data]
+                    self.scores = [
+                        {"name": str(e.get("name", "")), "score": int(e.get("score"))}
+                        for e in data
+                    ]
                 else:
                     self.scores = []
         except FileNotFoundError:
             self.scores = []
 
-    def save_scores(self):
+    def save_scores(self) -> None:
         with open(self.path, "w") as f:
             json.dump(self.scores, f, indent=4)
 
@@ -36,7 +39,7 @@ class score_board:
         try:
             score = int(score)
         except ValueError:
-            return 
+            return
 
         if score <= 0:
             return
@@ -54,8 +57,6 @@ class score_board:
 
         self.scores = sorted(self.scores, key=lambda e: e["score"], reverse=True)[:10]
         self.save_scores()
-        return
 
     def get_all_scores(self) -> List[dict]:
         return sorted(self.scores, key=lambda e: e["score"], reverse=True)
-

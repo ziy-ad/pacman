@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "arcade>=3.3.3",
+    "flake8>=7.4.1",
     "mazegenerator",
+    "mypy>=2.4.0",
     "rich>=15.0.0",
 ]
 

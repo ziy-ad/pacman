@@ -1,7 +1,7 @@
 import arcade
-from src.load_config import ParseConfig
-from src.pacman import Pacman
-from src.main_menu import MainMenu
+from src import *
+
+
 def main():
     parse = ParseConfig()
     window = arcade.Window(fullscreen=True, vsync=False)
@@ -11,4 +11,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(e)

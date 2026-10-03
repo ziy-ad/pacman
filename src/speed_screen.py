@@ -1,12 +1,13 @@
 import arcade
-from .pacman import Point, Pacman
+from .pacman import Point
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from .main_menu import MainMenu
+    from .main_menu import PauseMenu
 
 
 class CheatModeView(arcade.View):
-    def __init__(self, pause_menu: "MainMenu") -> None:
+    def __init__(self, pause_menu: "PauseMenu") -> None:
         super().__init__(background_color=arcade.color.BLACK)
         self.pause_menu = pause_menu
         self.options = [
@@ -49,7 +50,9 @@ class CheatModeView(arcade.View):
         cx = self.width // 2
         cy = self.height // 2
         if self.is_toggel:
-            self.toggel_text.text = f"{self.options[self.selected]}: {self.toggel_value}"
+            self.toggel_text.text = (
+                f"{self.options[self.selected]}: {self.toggel_value}"
+            )
             self.toggel_text.draw()
         self.title.draw()
 
@@ -72,12 +75,13 @@ class CheatModeView(arcade.View):
                 anchor_x="center",
                 anchor_y="center",
                 bold=index == self.selected,
-                font_name="Rowdies"
+                font_name="Rowdies",
             ).draw()
+
     def on_update(self, delta_time: float) -> bool | None:
         if self.is_toggel:
             if self.is_toggel_time < 0.5:
-                if self.toggel_text.font_size <= 38 :
+                if self.toggel_text.font_size <= 38:
                     self.toggel_text.font_size += 4
             elif self.toggel_text.font_size - 4 >= 1:
                 self.toggel_text.font_size -= 4
@@ -89,13 +93,12 @@ class CheatModeView(arcade.View):
                 self.toggel_text.visible = True
             self.is_toggel_time += delta_time
 
-
     def on_key_press(self, symbol: int, modifiers: int):
         self.is_toggel = False
         self.is_toggel_time = 0
         self.toggel_text.font_size = 0
         self.toggel_text.visible = True
-        
+
         if symbol == arcade.key.UP:
             self.selected = (self.selected - 1) % len(self.options)
         elif symbol == arcade.key.DOWN:
@@ -118,7 +121,9 @@ class CheatModeView(arcade.View):
                 value = self.pause_menu.game_view.cheater.show_ghost_path
                 self.toggel_value = f"{self.boolean_map[value]}"
                 self.is_toggel = True
-                self.pause_menu.game_view.cheater.show_ghost_path = self.boolean_map[value]
+                self.pause_menu.game_view.cheater.show_ghost_path = self.boolean_map[
+                    value
+                ]
             elif label == "Level Skip":
                 value = self.pause_menu.game_view.cheater.level_skip
                 self.toggel_value = f"{self.boolean_map[value]}"
@@ -137,10 +142,9 @@ class CheatModeView(arcade.View):
             self.window.show_view(self.pause_menu)
 
 
-
 class speed_view(arcade.View):
-    def __init__(self, pause_menu: "MainMenu") -> None:
-        super().__init__( background_color=arcade.color.BLACK)
+    def __init__(self, pause_menu: "PauseMenu") -> None:
+        super().__init__(background_color=arcade.color.BLACK)
         self.cy = self.height // 2
         self.pause_menu = pause_menu
         self.cell_size = 60
@@ -159,53 +163,104 @@ class speed_view(arcade.View):
             arcade.color.WHITE,
             font_size=38,
             anchor_x="center",
-            font_name="VT323")
+            font_name="VT323",
+        )
+
     def load_pacman_frames(self):
-        return  [
+        return [
             arcade.load_texture("src/assets/pacman_closed.png"),
             arcade.load_texture("src/assets/pacman_half.png"),
             arcade.load_texture("src/assets/pacman_open.png"),
         ]
+
     def draw_background(self):
-        r,g,b, _ = arcade.color.WHITE
+        r, g, b, _ = arcade.color.WHITE
         for x in range(0, int(self.width * 3), 40):
-            arcade.draw_line(x, 0, x  , self.height, (r,g,b, 100), 1)
+            arcade.draw_line(x, 0, x, self.height, (r, g, b, 100), 1)
 
         start = 20
         for y in range(0, int(self.height * 3), 40):
-            arcade.draw_line(0, y, self.width , abs(y - start), (r,g,b, 100), 1)
+            arcade.draw_line(0, y, self.width, abs(y - start), (r, g, b, 100), 1)
             start = y // 2
+
     def on_draw(self):
         self.clear()
         self.draw_background()
-        arcade.draw_rect_filled(arcade.XYWH(self.width // 2, self.cy, self.cell_size * 12, self.cell_size), arcade.color.BLACK)       
-        arcade.draw_line(self.start_x , self.cy + (self.cell_size // 2), self.start_x ,self.cy - (self.cell_size // 2) , arcade.color.BLUE, 5 )
-        arcade.draw_line(self.end_x , self.cy + (self.cell_size // 2), self.end_x ,self.cy - (self.cell_size // 2) , arcade.color.BLUE, 5 )
-        arcade.draw_line(self.start_x , self.cy + (self.cell_size // 2), self.end_x , self.cy + (self.cell_size // 2), arcade.color.BLUE, 5)
-        arcade.draw_line(self.start_x , self.cy - (self.cell_size // 2), self.end_x , self.cy - (self.cell_size // 2), arcade.color.BLUE, 5)
-        self.pac_man_speed_text.text = f"Speed: {round(self.pause_menu.game_view.speed * 100)} %"
-        arcade.draw_rect_filled(arcade.XYWH(self.width // 2, self.height - 185, self.cell_size * 4, self.cell_size), arcade.color.BLACK)       
-        arcade.draw_rect_outline(arcade.XYWH(self.width // 2, self.height - 185, self.cell_size * 4, self.cell_size), arcade.color.BLUE, 3)       
+        arcade.draw_rect_filled(
+            arcade.XYWH(self.width // 2, self.cy, self.cell_size * 12, self.cell_size),
+            arcade.color.BLACK,
+        )
+        arcade.draw_line(
+            self.start_x,
+            self.cy + (self.cell_size // 2),
+            self.start_x,
+            self.cy - (self.cell_size // 2),
+            arcade.color.BLUE,
+            5,
+        )
+        arcade.draw_line(
+            self.end_x,
+            self.cy + (self.cell_size // 2),
+            self.end_x,
+            self.cy - (self.cell_size // 2),
+            arcade.color.BLUE,
+            5,
+        )
+        arcade.draw_line(
+            self.start_x,
+            self.cy + (self.cell_size // 2),
+            self.end_x,
+            self.cy + (self.cell_size // 2),
+            arcade.color.BLUE,
+            5,
+        )
+        arcade.draw_line(
+            self.start_x,
+            self.cy - (self.cell_size // 2),
+            self.end_x,
+            self.cy - (self.cell_size // 2),
+            arcade.color.BLUE,
+            5,
+        )
+        self.pac_man_speed_text.text = (
+            f"Speed: {round(self.pause_menu.game_view.speed * 100)} %"
+        )
+        arcade.draw_rect_filled(
+            arcade.XYWH(
+                self.width // 2, self.height - 185, self.cell_size * 4, self.cell_size
+            ),
+            arcade.color.BLACK,
+        )
+        arcade.draw_rect_outline(
+            arcade.XYWH(
+                self.width // 2, self.height - 185, self.cell_size * 4, self.cell_size
+            ),
+            arcade.color.BLUE,
+            3,
+        )
         self.pac_man_speed_text.draw()
 
         arcade.draw_texture_rect(
             self.pac_man_frames[self.pac_man_frame_index],
             arcade.XYWH(
-                    self.pac_man_position.x ,
-                    self.pac_man_position.y,
-                    self.cell_size * 0.7,
-                    self.cell_size * 0.7)
-            )
+                self.pac_man_position.x,
+                self.pac_man_position.y,
+                self.cell_size * 0.7,
+                self.cell_size * 0.7,
+            ),
+        )
 
     def on_update(self, delta_time):
         self.pac_man_seconds += delta_time
-        to_add = int(self.pause_menu.game_view.cell_size * self.pause_menu.game_view.speed)
+        to_add = int(
+            self.pause_menu.game_view.cell_size * self.pause_menu.game_view.speed
+        )
         if self.pac_man_seconds >= 0.2:
             self.pac_man_frame_index += self.pac_man_next
             if self.pac_man_frame_index == 0 or self.pac_man_frame_index == 2:
                 self.pac_man_next *= -1
             self.pac_man_seconds = 0
-        if self.pac_man_position.x + to_add < self.end_x - self.cell_size  // 2:
+        if self.pac_man_position.x + to_add < self.end_x - self.cell_size // 2:
             self.pac_man_position.x += to_add
 
     def on_key_press(self, symbol: int, modifiers: int):

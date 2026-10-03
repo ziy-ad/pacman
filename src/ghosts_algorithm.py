@@ -5,16 +5,21 @@ import arcade
 from pathlib import Path
 from collections import deque
 from .enums import directions, moves, Ghost_modes
+
+
 class Ghost(arcade.Sprite, ABC):
     normal_mode_texture: arcade.Texture
+
     def __init__(self, coordinates, maze, cell_size):
         self.all_texture: dict[directions, arcade.Texture] = {}
-        super().__init__(scale=0.1 )
+        super().__init__(scale=0.1)
         self.maze = maze
         self.cell_size = cell_size
         self.direction = directions.LEFT
         self.mode = Ghost_modes.Chase_mode
-        self.fight_mode_texture = arcade.load_texture("src/assets/ghosts/fright/frightened_blue.png")
+        self.fight_mode_texture = arcade.load_texture(
+            "src/assets/ghosts/fright/frightened_blue.png"
+        )
         self.width = self.cell_size * 0.7
         self.height = self.cell_size * 0.7
         self.coordinates: tuple[int, int] = coordinates
@@ -28,12 +33,14 @@ class Ghost(arcade.Sprite, ABC):
         self.normal_mode_texture = self.all_texture[self.direction]
         self.texture = self.normal_mode_texture
         self.path = []
+
     def load_textures(self):
         assets_path = Path(__file__).resolve().parent / "assets" / "ghosts"
         for dir in directions:
-            path = assets_path / self.__class__.__name__ / (str(dir.name).lower() + ".png")
+            path = (
+                assets_path / self.__class__.__name__ / (str(dir.name).lower() + ".png")
+            )
             self.all_texture[dir] = arcade.load_texture(path)
-        
 
     def update(self, delta_time: float = 1 / 60, *args, **kwargs) -> None:
         cell_positions = kwargs["cell_positions"]
@@ -61,9 +68,11 @@ class Ghost(arcade.Sprite, ABC):
                 self.target_x, self.target_y = cell_positions[gy][gx]
         used_cells.add(self.coordinates)
         ghost_step = self.cell_size * ghost_speed
-        if abs(self.center_x - self.target_x) <= ghost_step and \
-            abs(self.center_y - self.target_y) <= ghost_step:
-            
+        if (
+            abs(self.center_x - self.target_x) <= ghost_step
+            and abs(self.center_y - self.target_y) <= ghost_step
+        ):
+
             # Snap to exact target to prevent floating point drift
             self.center_x = self.target_x
             self.center_y = self.target_y
@@ -74,11 +83,9 @@ class Ghost(arcade.Sprite, ABC):
                 next_cell = self.run_away(pac_man_grid)
             else:
                 next_cell = self.get_path(
-                    start_time,
-                    used_cells,
-                    pac_man_grid,
-                    current_key)
-            
+                    start_time, used_cells, pac_man_grid, current_key
+                )
+
             if next_cell:
 
                 used_cells.add(next_cell)
@@ -107,7 +114,7 @@ class Ghost(arcade.Sprite, ABC):
                 self.center_x += ghost_step
             elif self.center_x > self.target_x:
                 self.center_x -= ghost_step
-                
+
             if self.center_y < self.target_y:
                 self.center_y += ghost_step
             elif self.center_y > self.target_y:
@@ -120,9 +127,7 @@ class Ghost(arcade.Sprite, ABC):
         self.target_x, self.target_y = cell_position[gy][gx]
 
     @abstractmethod
-    def get_path(self, start_time, used_cells, pacman_pos, edible, last_key=None):
-        ...
-
+    def get_path(self, start_time, used_cells, pacman_pos, edible, last_key=None): ...
 
     def bfs_to_next_move(self, used_cells, pacman_pos, last_key=None):
         if self.coordinates == pacman_pos:
@@ -151,7 +156,6 @@ class Ghost(arcade.Sprite, ABC):
 
                 visited[(nx, ny)] = (cx, cy)
 
-                    
                 if (nx, ny) == pacman_pos:
                     step = (nx, ny)
                     while visited[step] != self.coordinates:
@@ -184,14 +188,13 @@ class Ghost(arcade.Sprite, ABC):
 
         return self.coordinates
 
-
     def random_next_move(self):
         gx, gy = self.coordinates
         options = []
         for move in moves:
             wall_flag, dx, dy = move.value
             nx, ny = gx + dx, gy + dy
-            
+
             if not (0 <= nx < len(self.maze[0]) and 0 <= ny < len(self.maze)):
                 continue
             if self.maze[gy][gx] & wall_flag:
@@ -207,7 +210,7 @@ class Ghost(arcade.Sprite, ABC):
                 filtred_options.append(option)
 
         if not filtred_options:
-            th =  random.choice(options)
+            th = random.choice(options)
             self.path += [th]
             return th
         th = random.choice(filtred_options)
@@ -217,8 +220,7 @@ class Ghost(arcade.Sprite, ABC):
     def run_away(self, pacman_pos):
         gx, gy = self.coordinates
         rows, cols = len(self.maze), len(self.maze[0])
-        far = float('inf')
-
+        far = float("inf")
 
         def bfs_distances(source):
             """Real corridor distance from source to every reachable cell."""
@@ -260,18 +262,18 @@ class Ghost(arcade.Sprite, ABC):
         if forward:
             valid = forward
 
-        best = max(v for _ , v in valid.items())
+        best = max(v for _, v in valid.items())
         valid = {k: v for k, v in valid.items() if v == best}
         return random.choice(list(valid.keys()))
 
 
 class Inky(Ghost):
-    def __init__(self, coordinates, maze,  cell_size, blinky: Ghost):
-        super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
+    def __init__(self, coordinates, maze, cell_size, blinky: Ghost):
+        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
         self.blinky = blinky
         self.required_time = 3
 
-    def get_path(self, start_time, used_cells, pacman_pos, last_key: directions=None):
+    def get_path(self, start_time, used_cells, pacman_pos, last_key: directions = None):
         current = time.time()
         if not pacman_pos:
             print("test")
@@ -293,7 +295,7 @@ class Inky(Ghost):
                 target = (-2, 0)
             case directions.RIGHT:
                 target = (2, 0)
-        target = list(t + p for p, t in zip(pacman_pos, target) )
+        target = list(t + p for p, t in zip(pacman_pos, target))
         while target[0] < 0:
             target[0] += 1
         while target[0] > len(self.maze[0]) - 1:
@@ -304,15 +306,15 @@ class Inky(Ghost):
             target[1] -= 1
         x = target[0] * 2 - self.blinky.coordinates[0]
         y = target[1] * 2 - self.blinky.coordinates[1]
-        x = max(min(len(self.maze[0]) - 1, x), 0)  
+        x = max(min(len(self.maze[0]) - 1, x), 0)
         y = max(min(len(self.maze) - 1, y), 0)
         target = (x, y)
         return self.bfs_to_next_move(used_cells, target, last_key)
 
 
 class Pinky(Ghost):
-    def __init__(self, coordinates, maze,  cell_size):
-        super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
+    def __init__(self, coordinates, maze, cell_size):
+        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
         self.required_time = 0
 
     def get_path(self, start_time, used_cells, pacman_pos, last_key=None):
@@ -326,13 +328,12 @@ class Pinky(Ghost):
 
             return self.coordinates
 
-
         return self.random_next_move()
 
 
 class Blinky(Ghost):
-    def __init__(self, coordinates, maze,  cell_size):
-        super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
+    def __init__(self, coordinates, maze, cell_size):
+        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
 
         self.required_time = 6
 
@@ -350,22 +351,38 @@ class Blinky(Ghost):
         rows, cols = len(self.maze), len(self.maze[0])
 
         if last_key is not None:
-            gx , gy = pacman_pos
-            if last_key == directions.LEFT and gx > 0 and not self.maze[gy][gx] & directions.LEFT:
-                    pacman_pos = (gx - 1, gy)
-            elif last_key == directions.RIGHT and gx < cols - 1 and not self.maze[gy][gx] & directions.RIGHT:
-                    pacman_pos = (gx + 1, gy)
-            elif last_key == directions.UP and gy > 0 and not self.maze[gy][gx] & directions.UP:
-                    pacman_pos = (gx, gy - 1)
-            elif last_key == directions.DOWN and gy < rows - 1 and not self.maze[gy][gx] & directions.DOWN:
-                    pacman_pos = (gx, gy + 1)
+            gx, gy = pacman_pos
+            if (
+                last_key == directions.LEFT
+                and gx > 0
+                and not self.maze[gy][gx] & directions.LEFT
+            ):
+                pacman_pos = (gx - 1, gy)
+            elif (
+                last_key == directions.RIGHT
+                and gx < cols - 1
+                and not self.maze[gy][gx] & directions.RIGHT
+            ):
+                pacman_pos = (gx + 1, gy)
+            elif (
+                last_key == directions.UP
+                and gy > 0
+                and not self.maze[gy][gx] & directions.UP
+            ):
+                pacman_pos = (gx, gy - 1)
+            elif (
+                last_key == directions.DOWN
+                and gy < rows - 1
+                and not self.maze[gy][gx] & directions.DOWN
+            ):
+                pacman_pos = (gx, gy + 1)
 
         return self.bfs_to_next_move(used_cells, pacman_pos, last_key)
 
 
 class Clyde(Ghost):
-    def __init__(self, coordinates, maze,  cell_size):
-        super().__init__(coordinates=coordinates, maze=maze ,cell_size=cell_size)
+    def __init__(self, coordinates, maze, cell_size):
+        super().__init__(coordinates=coordinates, maze=maze, cell_size=cell_size)
         self.required_time = 9
 
         self.min_distance = 6
@@ -378,7 +395,6 @@ class Clyde(Ghost):
         if pacman_pos == self.coordinates:
             return self.coordinates
 
-
         # if pacman_pos in used_cells:
         #     return self.random_next_move()
 
@@ -387,32 +403,34 @@ class Clyde(Ghost):
 
         distance = abs(gx - px) + abs(gy - py)
         if distance > self.min_distance:
-            target = self.get_position_infront(self.maze, pacman_pos, last_key, self.min_distance)
-            return self.bfs_to_next_move(used_cells,  target, last_key)
+            target = self.get_position_infront(
+                self.maze, pacman_pos, last_key, self.min_distance
+            )
+            return self.bfs_to_next_move(used_cells, target, last_key)
 
         return self.bfs_to_next_move(used_cells, self.init_coord, last_key)
-        
+
     def get_position_infront(self, maze_grid, start_pos, direction, max_steps):
         """Look up to max_steps ahead in the given direction, stopping at walls."""
         x, y = start_pos
         rows, cols = len(maze_grid), len(maze_grid[0])
-        
+
         direction_delta = {
-            directions.UP:    (0, -1),
-            directions.RIGHT: (1,  0),
-            directions.DOWN:  (0,  1),
-            directions.LEFT:  (-1, 0),
+            directions.UP: (0, -1),
+            directions.RIGHT: (1, 0),
+            directions.DOWN: (0, 1),
+            directions.LEFT: (-1, 0),
         }
-        
+
         dx, dy = direction_delta.get(direction, (0, 0))
-        
+
         for _ in range(max_steps):
             if maze_grid[y][x] & direction:
-                break  
+                break
 
             x += dx
             y += dy
-            
+
             if not (0 <= x < cols and 0 <= y < rows):
                 break
         return (x, y)

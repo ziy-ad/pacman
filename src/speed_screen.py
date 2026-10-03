@@ -1,13 +1,13 @@
 import arcade
 from .pacman import Point
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from .main_menu import PauseMenu
-
+    from .main_menu import MainMenu
 
 class CheatModeView(arcade.View):
-    def __init__(self, pause_menu: "PauseMenu") -> None:
+    def __init__(self, pause_menu: Union["PauseMenu" , "MainMenu"]) -> None:
         super().__init__(background_color=arcade.color.BLACK)
         self.pause_menu = pause_menu
         self.options = [
@@ -143,7 +143,7 @@ class CheatModeView(arcade.View):
 
 
 class speed_view(arcade.View):
-    def __init__(self, pause_menu: "PauseMenu") -> None:
+    def __init__(self, pause_menu: Union["PauseMenu" , "MainMenu"]) -> None:
         super().__init__(background_color=arcade.color.BLACK)
         self.cy = self.height // 2
         self.pause_menu = pause_menu

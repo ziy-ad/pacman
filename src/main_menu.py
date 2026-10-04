@@ -141,9 +141,9 @@ class InstructionsView(arcade.View):
             ("Pause", "Press Escape during a game", arcade.color.WHITE),
         ]
         rect_ = arcade.XYWH(cx, cy - 100, 1600, 600)
-        r ,g ,b ,_ = arcade.color.BLACK
+        r, g, b, _ = arcade.color.BLACK
         y = cy
-        arcade.draw_rect_filled(rect_, (r,g,b,190))
+        arcade.draw_rect_filled(rect_, (r, g, b, 190))
         for index, (heading, text, color) in enumerate(instructions):
             y = cy + 120 - index * 100
             arcade.Text(
@@ -388,7 +388,7 @@ class ScoreboardView(arcade.View):
         ).draw()
 
         scores = self.scoreboard.get_all_scores()
-        y = 0
+        y: float = 0
         if not scores:
             arcade.Text(
                 "No highscores yet",

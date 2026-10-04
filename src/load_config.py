@@ -6,7 +6,6 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, cast
 from .paths import user_path
-import sys
 
 MIN_LENGTH = 10
 MAX_LENGTH = 40
@@ -75,57 +74,6 @@ class ParseConfig:
             if in_comment == 1:
                 print("comment still not closed")
                 sys.exit(1)
-
-        def strip_json_comments(text: str) -> str:
-            """Return the text without comments."""
-            out: list[str] = []
-            i = 0
-            n = len(text)
-
-            in_string = False
-            escape = False
-
-            while i < n:
-                c = text[i]
-
-                if in_string:
-                    out.append(c)
-                    if escape:
-                        escape = False
-                    elif c == "\\":
-                        escape = True
-                    elif c == '"':
-                        in_string = False
-                    i += 1
-                    continue
-
-                if c == '"':
-                    in_string = True
-                    out.append(c)
-                    i += 1
-                    continue
-
-                if text.startswith("//", i):
-                    while i < n and text[i] != "\n":
-                        i += 1
-                    continue
-
-                if c == "#":
-                    while i < n and text[i] != "\n":
-                        i += 1
-                    continue
-
-                if text.startswith("/*", i):
-                    i += 2
-                    while i + 1 < n and not text.startswith("*/", i):
-                        i += 1
-                    i += 2
-                    continue
-
-                out.append(c)
-                i += 1
-
-            return "".join(out)
 
         try:
             return cast(dict[str, Any], json.loads(filtred_file))

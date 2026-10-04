@@ -34,7 +34,7 @@ class score_board:
         except FileNotFoundError:
             self.scores = []
         if len(self.scores) > 10:
-            self.scores = sorted(self.scores, key=lambda x:x["score"])[:10]
+            self.scores = sorted(self.scores, key=lambda x: x["score"])[:10]
             with open(self.path, "w") as f:
                 json.dump(
                     self.scores,

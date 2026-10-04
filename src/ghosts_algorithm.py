@@ -10,6 +10,7 @@ from .enums import directions, moves, Ghost_modes
 from .paths import resource_path
 import sys
 
+
 class Ghost(arcade.Sprite, ABC):
     """Base class of all the ghosts."""
 
@@ -340,7 +341,7 @@ class Inky(Ghost):
         target: Any = (0, -2)
         match last_key:
             case directions.UP:
-                target: Any = (0, -2)
+                target = (0, -2)
             case directions.DOWN:
                 target = (0, 2)
             case directions.LEFT:

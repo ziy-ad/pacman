@@ -6,10 +6,10 @@ import arcade
 from mazegenerator import MazeGenerator
 import time
 from .score_tracker import score_board
-from pathlib import Path
 from typing import Any, Iterator
 import random
 from .ghosts_algorithm import Ghost, Inky, Blinky, Clyde, Pinky
+from .paths import resource_path, user_path
 
 
 class Point:
@@ -76,7 +76,7 @@ class Pacman(arcade.View):
         self.map_maze_coordinates()
         self.lives = self.parser.lives
 
-        self.assets_path = Path(__file__).resolve().parent / "assets"
+        self.assets_path = resource_path("src/assets")
         self.live_pac_man = arcade.load_texture(
             self.assets_path / "live_pacman.png"
         )
@@ -175,8 +175,7 @@ class Pacman(arcade.View):
         self.catch_freeze_time = 0.0
         self.catch_freeze_duration = 2.2
         self.score_path = (
-            Path(__file__).resolve().parent.parent
-            / self.parser.highscore_filename
+            user_path(self.parser.highscore_filename)
         )
         self.scoreboard = score_board(str(self.score_path))
         self.score = 0
@@ -343,9 +342,9 @@ class Pacman(arcade.View):
     def load_pacman_frames(self) -> dict[int, list[arcade.Texture]]:
         """Load the Pac-Man frames for each direction."""
         frames = [
-            arcade.load_texture("src/assets/pacman_closed.png"),
-            arcade.load_texture("src/assets/pacman_half.png"),
-            arcade.load_texture("src/assets/pacman_open.png"),
+            arcade.load_texture(resource_path("src/assets/pacman_closed.png")),
+            arcade.load_texture(resource_path("src/assets/pacman_half.png")),
+            arcade.load_texture(resource_path("src/assets/pacman_open.png")),
         ]
         directions_ = [
             directions.RIGHT,

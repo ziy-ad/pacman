@@ -4,11 +4,11 @@ from abc import ABC, abstractmethod
 import random
 import time
 import arcade
-from pathlib import Path
 from collections import deque
 from typing import Any
 from .enums import directions, moves, Ghost_modes
-
+from .paths import resource_path
+import sys
 
 class Ghost(arcade.Sprite, ABC):
     """Base class of all the ghosts."""
@@ -29,7 +29,7 @@ class Ghost(arcade.Sprite, ABC):
         self.direction = directions.LEFT
         self.mode = Ghost_modes.Chase_mode
         self.fight_mode_texture = arcade.load_texture(
-            "src/assets/ghosts/fright/frightened_blue.png"
+            resource_path("src/assets/ghosts/fright/frightened_blue.png")
         )
         self.width = self.cell_size * 0.7
         self.height = self.cell_size * 0.7
@@ -47,7 +47,7 @@ class Ghost(arcade.Sprite, ABC):
 
     def load_textures(self) -> None:
         """Load the textures of each direction."""
-        assets_path = Path(__file__).resolve().parent / "assets" / "ghosts"
+        assets_path = resource_path("src/assets/ghosts")
         for dir in directions:
             path = (
                 assets_path
@@ -331,7 +331,7 @@ class Inky(Ghost):
         current = time.time()
         if not pacman_pos:
             print("test")
-            exit()
+            sys.exit()
         if (current - start_time) < self.required_time:
             return self.coordinates
 

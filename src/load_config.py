@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, cast
+from .paths import user_path
+import sys
 
 MIN_LENGTH = 10
 MAX_LENGTH = 40
@@ -35,7 +37,7 @@ class ParseConfig:
             self.loaded_json = self.validate_file()
         except Exception as e:
             print(f"Error loading config file: {e}")
-            exit(1)
+            sys.exit(1)
         self.valid_data = ConfigData(**self.validate_data())
 
     @staticmethod
@@ -43,8 +45,8 @@ class ParseConfig:
         """Return the config file path given on the command line."""
         if len(sys.argv) != 2:
             print("Usage: uv run -m src config.json")
-            exit(1)
-        return sys.argv[1]
+            sys.exit(1)
+        return str(user_path(sys.argv[1]))
 
     def validate_file(self) -> dict[str, Any]:
         """Strip the comments from the config file and load its json."""
@@ -68,11 +70,11 @@ class ParseConfig:
                 else:
                     if in_comment == 1:
                         print("comment still not closed")
-                        exit(1)
+                        sys.exit(1)
                     filtred_file += line
             if in_comment == 1:
                 print("comment still not closed")
-                exit(1)
+                sys.exit(1)
 
         def strip_json_comments(text: str) -> str:
             """Return the text without comments."""
@@ -129,7 +131,7 @@ class ParseConfig:
             return cast(dict[str, Any], json.loads(filtred_file))
         except Exception as e:
             print(f"in config file: {e}")
-            exit(1)
+            sys.exit(1)
 
     def validate_data(self) -> dict[str, Any]:
         """Check the config values and use defaults when invalid."""
@@ -194,20 +196,21 @@ class ParseConfig:
                 print("file name should be string")
                 print("using 'track_score.json' as default")
         try:
-            with open(validated_data["highscore_filename"], "r") as f:
+            score_path = user_path(validated_data["highscore_filename"])
+            with open(score_path, "r") as f:
                 son = json.load(f)
                 if not isinstance(son, list):
                     raise ValueError()
         except Exception:
             try:
-                with open(validated_data["highscore_filename"], "w") as f:
+                with open(score_path, "w") as f:
                     json.dump([], f, indent=4)
             except Exception as e:
                 print(
                     "could not create "
                     f"{validated_data['highscore_filename']}: {e}"
                 )
-                exit(1)
+                sys.exit(1)
         for key in int_keys:
             if key in self.loaded_json.keys():
                 value = self.loaded_json.get(key)

@@ -2,6 +2,7 @@
 
 import arcade
 from .pacman import Point
+from .paths import resource_path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -186,9 +187,9 @@ class speed_view(arcade.View):
     def load_pacman_frames(self) -> list[arcade.Texture]:
         """Load the Pac-Man frames."""
         return [
-            arcade.load_texture("src/assets/pacman_closed.png"),
-            arcade.load_texture("src/assets/pacman_half.png"),
-            arcade.load_texture("src/assets/pacman_open.png"),
+            arcade.load_texture(resource_path("src/assets/pacman_closed.png")),
+            arcade.load_texture(resource_path("src/assets/pacman_half.png")),
+            arcade.load_texture(resource_path("src/assets/pacman_open.png")),
         ]
 
     def draw_background(self) -> None:

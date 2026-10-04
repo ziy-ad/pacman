@@ -6,6 +6,7 @@ from .score_tracker import score_board
 import re
 import time
 from .speed_screen import CheatModeView
+from .paths import resource_path
 
 
 class MainMenu(arcade.View):
@@ -15,11 +16,17 @@ class MainMenu(arcade.View):
         """Set up the main menu buttons."""
         super().__init__(window)
         self.background = arcade.load_texture(
-            "src/assets/pacmanbackground.jpg"
+            resource_path("src/assets/pacmanbackground.jpg")
         )
         self.game_view = game_view
         self.pause_view = PauseMenu(window, game_view, self)
-        self.buttons = ["Play", "Highscores", "CheatMode", "Quit"]
+        self.buttons = [
+            "Play",
+            "Instructions",
+            "Highscores",
+            "CheatMode",
+            "Quit",
+        ]
         self.selected = 0
         self.button_width = 250
         self.button_height = 50
@@ -76,6 +83,8 @@ class MainMenu(arcade.View):
             elif label == "CheatMode":
                 self.game_view.pause()
                 self.window.show_view(CheatModeView(self))
+            elif label == "Instructions":
+                self.window.show_view(InstructionsView(self.window, self))
             elif label == "Highscores":
                 self.game_view.pause()
                 self.window.show_view(
@@ -85,6 +94,85 @@ class MainMenu(arcade.View):
                 )
             elif label == "Quit":
                 arcade.exit()
+
+
+class InstructionsView(arcade.View):
+    """View explaining the game controls and objective."""
+
+    def __init__(self, window: arcade.Window, main_view: MainMenu) -> None:
+        """Set up the instructions view."""
+        super().__init__(window)
+        self.background = main_view.background
+        self.main_view = main_view
+
+    def on_draw(self) -> None:
+        """Draw the game instructions."""
+        self.clear()
+        arcade.draw_texture_rect(
+            self.background, arcade.LRBT(0, self.width, 0, self.height)
+        )
+        cx = self.width // 2
+        cy = self.height // 2
+
+        arcade.Text(
+            "How to Play",
+            cx,
+            cy + 250,
+            arcade.color.YELLOW,
+            font_name="Silkscreen",
+            font_size=44,
+            bold=True,
+            anchor_x="center",
+        ).draw()
+
+        instructions = [
+            ("Move", "Arrow keys or W A S D", arcade.color.WHITE),
+            ("Goal", "Eat every pellet in the maze", arcade.color.WHITE),
+            (
+                "Power pellets",
+                "Eat one to chase and eat ghosts",
+                arcade.color.AERO_BLUE,
+            ),
+            (
+                "Warning",
+                "Avoid ghosts unless they are frightened",
+                arcade.color.WHITE,
+            ),
+            ("Pause", "Press Escape during a game", arcade.color.WHITE),
+        ]
+        for index, (heading, text, color) in enumerate(instructions):
+            y = cy + 120 - index * 55
+            arcade.Text(
+                heading,
+                cx - 260,
+                y,
+                arcade.color.YELLOW,
+                font_name="Rowdies",
+                font_size=21,
+                bold=True,
+            ).draw()
+            arcade.Text(
+                text,
+                cx - 70,
+                y,
+                color,
+                font_name="Rowdies",
+                font_size=19,
+            ).draw()
+
+        arcade.Text(
+            "Press Enter or Escape to return to the menu",
+            cx,
+            cy - 220,
+            arcade.color.GRAY,
+            font_size=16,
+            anchor_x="center",
+        ).draw()
+
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        """Return to the main menu."""
+        if symbol in (arcade.key.RETURN, arcade.key.ENTER, arcade.key.ESCAPE):
+            self.window.show_view(self.main_view)
 
 
 class PauseMenu(arcade.View):
@@ -188,7 +276,9 @@ class GameOverView(arcade.View):
         self.button_height = 52
         self.button_x = self.width // 2
         self.button_y = self.height // 2 - 130
-        self.background = arcade.load_texture("src/assets/game_over_bg.png")
+        self.background = arcade.load_texture(
+            resource_path("src/assets/game_over_bg.png")
+        )
         self.scoreboard = scoreboard
         self.score = score
         self.pacman_view = pacman_view

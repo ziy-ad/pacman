@@ -2,7 +2,7 @@
 
     "highscore_filename": "test.json",
 
-    "lives": 3,
+    "lives": 1,
 
     "points_per_pacgum": 10,
     "points_per_super_pacgum": 50,

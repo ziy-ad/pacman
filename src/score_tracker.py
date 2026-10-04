@@ -33,6 +33,14 @@ class score_board:
                     self.scores = []
         except FileNotFoundError:
             self.scores = []
+        if len(self.scores) > 10:
+            self.scores = sorted(self.scores, key=lambda x:x["score"])[:10]
+            with open(self.path, "w") as f:
+                json.dump(
+                    self.scores,
+                    f,
+                    indent=4
+                )
 
     def save_scores(self) -> None:
         """Write the scores to the json file."""

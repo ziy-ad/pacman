@@ -380,6 +380,7 @@ class ScoreboardView(arcade.View):
         ).draw()
 
         scores = self.scoreboard.get_all_scores()
+        y = 0
         if not scores:
             arcade.Text(
                 "No highscores yet",
@@ -421,13 +422,15 @@ class ScoreboardView(arcade.View):
                     font_size=size,
                     anchor_x="right",
                 ).draw()
-
+        y -= 200
         arcade.Text(
             "Press Enter or Escape to return to menu",
             cx,
-            cy - 200,
+            y,
             arcade.color.GRAY,
-            font_size=14,
+            font_size=24,
+            font_name="Rowdies",
+            bold=True,
             anchor_x="center",
         ).draw()
 

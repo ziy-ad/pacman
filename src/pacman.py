@@ -77,6 +77,7 @@ class Pacman(arcade.View):
         self.lives = self.parser.lives
 
         self.assets_path = resource_path("src/assets")
+        self.fonts_path = self.assets_path / "fonts"
         self.live_pac_man = arcade.load_texture(
             self.assets_path / "live_pacman.png"
         )
@@ -86,11 +87,11 @@ class Pacman(arcade.View):
         self.live_textures: list[arcade.Texture] = []
         self.set_pac_man_lives()
 
-        arcade.load_font(str(self.assets_path / "Silkscreen-Regular.ttf"))
-        arcade.load_font(str(self.assets_path / "Silkscreen-Bold.ttf"))
-        arcade.load_font(str(self.assets_path / "VT323-Regular.ttf"))
-        arcade.load_font(str(self.assets_path / "Rowdies-Regular.ttf"))
-        arcade.load_font(str(self.assets_path / "Rowdies-Bold.ttf"))
+        arcade.load_font(str(self.fonts_path / "Silkscreen-Regular.ttf"))
+        arcade.load_font(str(self.fonts_path / "Silkscreen-Bold.ttf"))
+        arcade.load_font(str(self.fonts_path / "VT323-Regular.ttf"))
+        arcade.load_font(str(self.fonts_path / "Rowdies-Regular.ttf"))
+        arcade.load_font(str(self.fonts_path / "Rowdies-Bold.ttf"))
 
         self.label_level = arcade.Text(
             "LEVEL",

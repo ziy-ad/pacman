@@ -337,7 +337,7 @@ class Inky(Ghost):
 
         if pacman_pos == self.coordinates:
             return self.coordinates
-
+        target: Any = (0, -2)
         match last_key:
             case directions.UP:
                 target: Any = (0, -2)

@@ -117,10 +117,10 @@ class InstructionsView(arcade.View):
         arcade.Text(
             "How to Play",
             cx,
-            cy + 250,
+            cy + 280,
             arcade.color.YELLOW,
             font_name="Silkscreen",
-            font_size=44,
+            font_size=54,
             bold=True,
             anchor_x="center",
         ).draw()
@@ -140,33 +140,41 @@ class InstructionsView(arcade.View):
             ),
             ("Pause", "Press Escape during a game", arcade.color.WHITE),
         ]
+        rect_ = arcade.XYWH(cx, cy - 100, 1600, 600)
+        r ,g ,b ,_ = arcade.color.BLACK
+        y = cy
+        arcade.draw_rect_filled(rect_, (r,g,b,190))
         for index, (heading, text, color) in enumerate(instructions):
-            y = cy + 120 - index * 55
+            y = cy + 120 - index * 100
             arcade.Text(
                 heading,
-                cx - 260,
+                cx - 750,
                 y,
                 arcade.color.YELLOW,
                 font_name="Rowdies",
-                font_size=21,
+                font_size=31,
                 bold=True,
+                anchor_x="left"
             ).draw()
             arcade.Text(
                 text,
-                cx - 70,
+                cx + 150,
                 y,
                 color,
                 font_name="Rowdies",
-                font_size=19,
+                font_size=25,
+                anchor_x="left"
+
             ).draw()
 
         arcade.Text(
             "Press Enter or Escape to return to the menu",
             cx,
-            cy - 220,
+            y - 100,
             arcade.color.GRAY,
-            font_size=16,
+            font_size=20,
             anchor_x="center",
+            font_name="Rowdies"
         ).draw()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:

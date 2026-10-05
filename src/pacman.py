@@ -820,8 +820,6 @@ class Pacman(arcade.View):
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         """Handle the keyboard input."""
-        if symbol == arcade.key.F:
-            self.window.set_fullscreen(not self.window.fullscreen)
         if symbol == arcade.key.RIGHT or symbol == arcade.key.D:
             self.next_key = directions.RIGHT
         if symbol == arcade.key.ESCAPE:

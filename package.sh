@@ -1,5 +1,5 @@
 uv sync
-rm -rf build dist pacman.spec
+rm -rf build dist pac-man.spec
 uv run pyinstaller --noconfirm --onedir --name pacman \
 --add-data "src/assets:src/assets" pac-man.py
 rm -rf dist/pacman/_internal/arcade/VERSION

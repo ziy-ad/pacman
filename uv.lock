@@ -468,6 +468,7 @@ dependencies = [
     { name = "flake8" },
     { name = "mazegenerator" },
     { name = "mypy" },
+    { name = "pyclean" },
     { name = "pyinstaller" },
     { name = "rich" },
 ]
@@ -478,6 +479,7 @@ requires-dist = [
     { name = "flake8", specifier = ">=7.4.1" },
     { name = "mazegenerator", path = "wheels/mazegenerator-2.0.2-py3-none-any.whl" },
     { name = "mypy", specifier = ">=2.4.0" },
+    { name = "pyclean", specifier = ">=3.7.0" },
     { name = "pyinstaller", specifier = ">=6.22.3" },
     { name = "rich", specifier = ">=15.0.0" },
 ]
@@ -582,6 +584,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/31/5e/03966aedfbfcbb4d5f8aa042452d3361f325b963ebbadddac05b122e47dd/pillow-11.3.0-pp311-pypy311_pp73-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:5418b53c0d59b3824d05e029669efa023bbef0f3e92e75ec8428f3799487f361", size = 4957170, upload-time = "2025-07-01T09:16:23.762Z" },
     { url = "https://files.pythonhosted.org/packages/cc/2d/e082982aacc927fc2cab48e1e731bdb1643a1406acace8bed0900a61464e/pillow-11.3.0-pp311-pypy311_pp73-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:504b6f59505f08ae014f724b6207ff6222662aab5cc9542577fb084ed0676ac7", size = 5581505, upload-time = "2025-07-01T09:16:25.593Z" },
     { url = "https://files.pythonhosted.org/packages/34/e7/ae39f538fd6844e982063c3a5e4598b8ced43b9633baa3a85ef33af8c05c/pillow-11.3.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:c84d689db21a1c397d001aa08241044aa2069e7587b398c8cc63020390b1c1b8", size = 6984598, upload-time = "2025-07-01T09:16:27.732Z" },
+]
+
+[[package]]
+name = "pyclean"
+version = "3.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/cc/1039d7423a4fe961a36c41c985cf7c1a84270de922d4cc82e16494c7a8b5/pyclean-3.7.0.tar.gz", hash = "sha256:f4605562684fe721d79cfb92842d9d993d1aa7e9a1d13f316e45b29d02d9946b", size = 27580, upload-time = "2026-05-23T01:44:06.561Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/5d/38264b704ed3dd35c765dda435118cf9a249048bd638fbd46d3fd51a9146/pyclean-3.7.0-py3-none-any.whl", hash = "sha256:76c1688c1a976889d526c1a2623107f4bc746ce26538f184f041422d91653858", size = 28374, upload-time = "2026-05-23T01:44:05.483Z" },
 ]
 
 [[package]]

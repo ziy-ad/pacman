@@ -74,7 +74,6 @@ class score_board:
                 existed["score"] = score
         else:
             self.scores.append({"name": name, "score": score})
-
         self.scores = sorted(
             self.scores, key=lambda e: e["score"], reverse=True
         )[:10]

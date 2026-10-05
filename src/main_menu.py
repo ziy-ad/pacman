@@ -7,6 +7,8 @@ import re
 import time
 from .speed_screen import CheatModeView
 from .paths import resource_path
+from PIL import ImageFilter
+from typing import Any
 
 
 class MainMenu(arcade.View):
@@ -284,15 +286,35 @@ class GameOverView(arcade.View):
         self.button_height = 52
         self.button_x = self.width // 2
         self.button_y = self.height // 2 - 130
-        self.background = arcade.load_texture(
-            resource_path("src/assets/game_over_bg.png")
-        )
+        self.chars_to_move: list[list[Any]] = []
+        self.chars_map = self.create_char_map()
+        image = arcade.get_image()
+        image = image.filter(ImageFilter.GaussianBlur(radius=15))
+        self.background = arcade.Texture(image=image)
         self.scoreboard = scoreboard
         self.score = score
         self.pacman_view = pacman_view
         self.input_name = ""
         self.message = "Enter your name (max 10, letters/numbers/spaces):"
         self.valid_re = re.compile(r"^[A-Za-z0-9 ]{1,10}$")
+
+    def create_char_map(self) -> dict[str, list[int]]:
+        screen_width = self.window.width
+        strings = [
+            "1234567890",
+            "qwertyuiop",
+            "asdfghjkl",
+            "zxcvbnm",
+        ]
+        char_pos: dict[str, list[int]] = {}
+
+        for string in strings:
+            for i, char in enumerate(string):
+                x = int(round(5 + (i % 10) * (screen_width - 5) / 9))
+                char_pos[char] = [x, 0]
+                if char.isalpha():
+                    char_pos[char.upper()] = [x, 0]
+        return char_pos
 
     def on_draw(self) -> None:
         """Draw the name input and the score."""
@@ -302,24 +324,51 @@ class GameOverView(arcade.View):
         )
         arcade.draw_texture_rect(self.background, r)
         cx = self.width // 2
-        cy = self.height // 2
+        cy = self.height // 2 + 300
+
+        if self.chars_to_move:
+            for item in self.chars_to_move:
+                char, cords = item
+                x, y = cords
+                arcade.Text(
+                    f"{char}",
+                    x,
+                    y,
+                    arcade.color.AERO_BLUE,
+                    font_size=108,
+                    font_name="VT323",
+                    anchor_x="center",
+                ).draw()
 
         arcade.Text(
             self.input_name + ("_" if int(time.time() * 2) % 2 == 0 else ""),
             cx,
             cy - 80,
             arcade.color.AERO_BLUE,
-            font_size=28,
+            font_name="VT323",
+            font_size=48,
             anchor_x="center",
         ).draw()
 
         arcade.Text(
-            f"Your score: {self.pacman_view.previous_score}",
-            cx,
+            "Your score:",
+            cx - 100,
             cy,
             arcade.color.YELLOW,
             font_size=28,
-            anchor_x="center",
+            font_name="Silkscreen",
+            bold=True,
+            anchor_x="right",
+        ).draw()
+        arcade.Text(
+            f"{self.pacman_view.previous_score}",
+            cx + 100,
+            cy,
+            arcade.color.YELLOW,
+            font_size=25,
+            font_name="Rowdies",
+            bold=True,
+            anchor_x="left",
         ).draw()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -353,7 +402,33 @@ class GameOverView(arcade.View):
             return
         for ch in text:
             if len(self.input_name) < 10 and (ch.isalnum() or ch == " "):
-                self.input_name += ch
+                if ch == " ":
+                    self.input_name += ch
+                    continue
+                self.chars_to_move += [[ch, self.chars_map[ch].copy()]]
+
+    def on_update(self, delta_time: float) -> None:
+        cx = self.width // 2
+        cy = self.height // 2 + 300 - 100
+        to_remove = []
+        if self.chars_to_move:
+            min_dist = 50
+            for index in range(len(self.chars_to_move)):
+                item = self.chars_to_move[index]
+                char_x, char_y = self.chars_map[item[0]]
+                nx = (cx - char_x) * 0.05
+                ny = (cy - char_y) * 0.05
+                if (
+                    abs(cx - item[1][0] + nx) <= min_dist
+                    and abs(cy - item[1][1] + ny) <= min_dist
+                ):
+                    to_remove += [item]
+                    self.input_name += item[0]
+                else:
+                    self.chars_to_move[index][1][0] += int(nx)
+                    self.chars_to_move[index][1][1] += int(ny)
+        for item in to_remove:
+            self.chars_to_move.remove(item)
 
 
 class ScoreboardView(arcade.View):

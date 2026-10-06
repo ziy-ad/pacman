@@ -258,9 +258,11 @@ AI (Claude) was used for:
 
 
 ## Project Management
+At the start of the project, we used a GitHub Projects board on which we split the tasks.
 
-[Describe in a few lines how the team organised the work: roles, task split,
-meetings, tools (Git branches, issues, board...), and how the work was
-tracked.]
+zboualam: config file parsing, ghost algorithms, level progression, and cheat mode.
+hahchtar: player mechanics and all the UI views.
 
-Project management directory: [project_management/](project_management/)
+We planned to start with a main branch and create a new branch every time we needed to add a feature. hahchtar usually verified the merges and fixed the conflicts.
+
+

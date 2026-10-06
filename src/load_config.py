@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 from .paths import user_path
 
-MIN_LENGTH = 10
+MIN_LENGTH = 15
 MAX_LENGTH = 40
 
 
@@ -84,7 +84,7 @@ class ParseConfig:
     def validate_data(self) -> dict[str, Any]:
         """Check the config values and use defaults when invalid."""
         default_levels: list[dict[str, Any]] = [
-            {"width": 10, "height": 10},
+            {"width": 15, "height": 15},
             {"width": 25, "height": 25},
             {"width": 29, "height": 25},
             {"width": 29, "height": 29},
@@ -180,7 +180,7 @@ class ParseConfig:
 
         if "levels" in self.loaded_json.keys():
             levels = self.loaded_json.get("levels", None)
-            levels = levels if levels else default_levels
+            levels = levels if isinstance(levels, list) else default_levels
             for i, level in enumerate(levels):
                 use_default = 0
                 width = level.get("width")
